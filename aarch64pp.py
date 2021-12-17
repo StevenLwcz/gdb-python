@@ -313,3 +313,40 @@ VS	overflow
        print(str)
 
 InfoCpsr()
+
+# info fpcr
+
+class InfoFpcr(gdb.Command):
+   """Display the status of the floating point control register (fpcr) register
+      Only shows the Rounding Mode. Can easily be expanded to show other bits as desired"""
+
+   def __init__(self):
+       super(InfoFpcr, self).__init__("info fpcr", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       FPCR_REGISTER = 67
+
+       RM_MASK = 0x600000 # 23-22
+       RN_FLAG = 0x000000 # Round towards nearest
+       RP_FLAG = 0x400000 # Round towards + infinity
+       RM_FLAG = 0x200000 # Round towards - infinity
+       RZ_FLAG = 0x600000 # Round towards zero
+
+       frame = gdb.selected_frame()
+       name = regs[FPCR_REGISTER]
+       reg = frame.read_register(name)
+       str = name + ": "
+
+       mode = RM_MASK & reg
+       if mode == RN_FLAG:
+           str += "Round towards nearest"
+       elif mode == RP_FLAG:
+           str += "Round towards plus infinity"
+       elif mode == RM_FLAG:
+           str += "Round towards minus infinity"
+       else:
+           str += "Round towards zero"
+
+       print(str)
+
+InfoFpcr()
