@@ -3,27 +3,27 @@
 # 2. An event hook for register change by the user
 # 3. A custom gdb command info single and info double to display floating point registers
 #
-# gdb -x aarch64pp.py <exe>
+# gdb -x armv8-app.py <exe>
 #
 # potential use case of info single/double
 # (gdb) define hook-stop
-# > info single 10 3
+# > info double 10 3
 # > end
 #
 # gdb will now display the 3 floating point registers after every n/s command.
 #
 #
 # These functions were written in order to learn about and explore the GDB Python API while learning about ARM assembler.
-# Developed and tested with gdb 8.2.1 on aarch64
-# armv8-a version coming soon.
+# Developed and tested with gdb 8.2.1 on armv8-a
 #
 # Future aim is to create custom tui windows for floating point registers
 # since in aarch64 they are too verbose and not as compact as the armv8-a versions
+# Will require gdb 10.0 
 #
 # --------------------
 
 #
-# Override the pretty printing of the floating point registers $dnn and $snn
+# Override the pretty printing of the floating point registers $dnn
 # to make the tui reg float window less cluttered if you are only interested in
 # floating point values.
 #
@@ -32,14 +32,10 @@
 
 # (gdb) p $d1
 # $2 = {f = 23.454499999999999}
-# (gdb) p $s1
-# $6 = {f = 1.13841227e-21}
 
 # use the /r to get the original formatting back
 # (gdb) p /r $d1
-# $4 = {f = 23.454499999999999, u = 4627295072523388977, s = 4627295072523388977}
-# (gdb) p /r $s1
-# $8 = {f = 1.13841227e-21, u = 481036337, s = 481036337}
+# $5 = {u8 = {14, 190, 48, 153, 42, 232, 36, 64}, u16 = {48654, 39216, 59434, 16420}, u32 = {2570108430, 1076160554}, u64 = 46220743872453504, f32 = {-9.13736798e-24, 2.57667017}, f64 = 10.45345}`
 
 import gdb
 
@@ -49,15 +45,10 @@ class FloatRegPrinter(object):
         self.val = val
 
     def to_string(self):
-        pass
+        return "%f" %self.val['f64']
 
-# Use children method else the tui reg float window won't display the values in hex and float
-# The view was better in armv8-a since Snn were float but now they are a builtin union
-
-    def children(self):
-        yield "f", self.val['f']
-        # yield "s", self.val['s']
-        # yield "u", self.val['u']
+    # def children(self):
+    #     pass
  
     def display_hint(self):
         return None
@@ -68,15 +59,13 @@ import gdb.printing
 pp = gdb.printing.RegexpCollectionPrettyPrinter('AsmLibrary')
 
 # add a type regex to the collection
-pp.add_printer('double_float_registers', "^__gdb_builtin_type_vnd$", FloatRegPrinter)
-pp.add_printer('single_float_registers', "^__gdb_builtin_type_vns$", FloatRegPrinter)
+pp.add_printer('double_float_registers', "^neon_d$", FloatRegPrinter)
 
 # register the collection
 gdb.printing.register_pretty_printer(gdb.current_objfile(), pp, replace=True)
 
 
 # (gdb) info pretty-printer
-# (gdb) g/D 
 
 # --------------------
 
@@ -92,29 +81,23 @@ gdb.printing.register_pretty_printer(gdb.current_objfile(), pp, replace=True)
  
 # regs list generated from reg.awk
 
-regs = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
-, "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19"
-, "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29"
-, "x30", "sp", "pc", "cpsr", "v0", "v1", "v2", "v3", "v4", "v5"
-, "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15"
-, "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25"
-, "v26", "v27", "v28", "v29", "v30", "v31", "fpsr", "fpcr", "q0", "q1"
-, "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11"
-, "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19", "q20", "q21"
-, "q22", "q23", "q24", "q25", "q26", "q27", "q28", "q29", "q30", "q31"
-, "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9"
-, "d10", "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19"
-, "d20", "d21", "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29"
-, "d30", "d31", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"
+# single registers start at 91
+# double registers start at 58
+
+regs = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"
+, "r9", "r10", "r11", "r12", "sp", "lr", "pc", "''", "''", "''"
+, "''", "''", "''", "''", "''", "''", "cpsr", "''", "''", "''"
+, "''", "''", "''", "''", "''", "''", "''", "''", "''", "''"
+, "''", "''", "''", "''", "''", "''", "''", "''", "''", "''"
+, "''", "''", "''", "''", "''", "''", "''", "''", "''", "d0"
+, "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10"
+, "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20"
+, "d21", "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29", "d30"
+, "d31", "fpscr", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"
 , "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "s16", "s17"
 , "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27"
-, "s28", "s29", "s30", "s31", "h0", "h1", "h2", "h3", "h4", "h5"
-, "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15"
-, "h16", "h17", "h18", "h19", "h20", "h21", "h22", "h23", "h24", "h25"
-, "h26", "h27", "h28", "h29", "h30", "h31", "b0", "b1", "b2", "b3"
-, "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13"
-, "b14", "b15", "b16", "b17", "b18", "b19", "b20", "b21", "b22", "b23"
-, "b24", "b25", "b26", "b27", "b28", "b29", "b30", "b31"]
+, "s28", "s29", "s30", "s31", "q0", "q1", "q2", "q3", "q4", "q5"
+, "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"]
 
 def reg_changed(event):
     name = regs[event.regnum]
@@ -128,16 +111,23 @@ gdb.events.register_changed.connect(reg_changed)
 # info single/double
 #
 
-def ParseInfoArgs(type, float_start, arguments):
-    MAX_REGISTERS = 32
-    ARGS_LENGTH = 8
-    CALLEE_SAVED_START = 8
-    CALLEE_SAVED_LENGTH = 8
-    TEMPORARY_START = 17
-    TEMPORARY_LENGTH = 15
+single_abi = {'type': 'single', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 16, 'CALLEE_SAVED_START': 16, 'CALLEE_SAVED_LENGTH': 16,
+           'TEMPORARY_START': 0, 'TEMPORARY_LENGTH': 0, 'FLOAT_START': 91}
+
+double_abi = {'type': 'double', 'MAX_REGISTERS': 16, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 58}
+
+def ParseInfoArgs(abi, arguments):
+    MAX_REGISTERS = abi['MAX_REGISTERS']
+    ARGS_LENGTH = abi['ARGS_LENGTH']
+    CALLEE_SAVED_START = abi['CALLEE_SAVED_START']
+    CALLEE_SAVED_LENGTH = abi['CALLEE_SAVED_LENGTH']
+    TEMPORARY_START = abi['TEMPORARY_START']
+    TEMPORARY_LENGTH = abi['TEMPORARY_LENGTH']
 
     length = MAX_REGISTERS
-    start = float_start
+    start = abi['FLOAT_START']
+    type = abi['type']
 
     args = gdb.string_to_argv(arguments)
     argc = len(args)
@@ -177,35 +167,39 @@ def ParseInfoArgs(type, float_start, arguments):
             return (-1, 0)
 
     return (start, length)
-
-def DumpFloatRegs(start, length):
+def DumpSingleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
         name = regs[i]
         reg = frame.read_register(name)
-        print(name + "\t" +  str(reg['f']) + "\t" + hex(reg['u']))
+        print(name + "\t" +  str(reg) + "\t" + float(reg).hex())
+
+def DumpDoubleFloatRegs(start, length):
+    frame = gdb.selected_frame()
+    for i in range(start,start + length):
+        name = regs[i]
+        reg = frame.read_register(name)
+        print(name + "\t" +  str(reg['f64']) + "\t" + hex(reg['u64']))
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
-info single  [[start [length]] | [args|callee|temp]] 
+info single  [[start [length]] | [args|callee|temp]]
         start: start register (0-31)
        length: number of registers:
-         args: arguments 0-7
-       callee: callee saved 8-16
-    temporary: 17-31
+         args: arguments 0-15
+       callee: callee saved 16-31
+    temporary: N/A
 default: info single 0, 32"""
 
    def __init__(self):
        super(InfoSingle, self).__init__("info single", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
-       SINGLE_START = 132
-
-       start, length = ParseInfoArgs("single", SINGLE_START, arguments)
+       start, length = ParseInfoArgs(single_abi, arguments)
        if start == -1: # error
            return
 
-       DumpFloatRegs(start, length)
+       DumpSingleFloatRegs(start, length)
 
 InfoSingle()
 
@@ -223,14 +217,12 @@ default: info double 0, 32"""
        super(InfoDouble, self).__init__("info double", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
-       DOUBLE_START = 100
-
-       start, length = ParseInfoArgs("double", DOUBLE_START, arguments)
+       start, length = ParseInfoArgs(double_abi, arguments)
        if start == -1: # error
            return
 
-       DumpFloatRegs(start, length)
+       DumpDoubleFloatRegs(start, length)
 
 InfoDouble()
 
-print("aarch64pp.py loaded")
+print("aarmv8-app.py loaded")
