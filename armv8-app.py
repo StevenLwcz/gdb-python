@@ -209,8 +209,8 @@ info double  [[start [length]] | [args|callee|temp]]
         start: start register (0-31)
        length: number of registers:
          args: arguments 0-7
-       callee: callee saved 8-16
-    temporary: 17-31
+       callee: callee saved 8-15
+    temporary: 16-31
 default: info double 0, 32"""
 
    def __init__(self):

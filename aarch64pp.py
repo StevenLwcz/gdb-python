@@ -128,16 +128,25 @@ gdb.events.register_changed.connect(reg_changed)
 # info single/double
 #
 
-def ParseInfoArgs(type, float_start, arguments):
-    MAX_REGISTERS = 32
-    ARGS_LENGTH = 8
-    CALLEE_SAVED_START = 8
-    CALLEE_SAVED_LENGTH = 8
-    TEMPORARY_START = 17
-    TEMPORARY_LENGTH = 15
+single_abi = {'type': 'single', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 132}
+
+double_abi = {'type': 'double', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 100}
+
+# would be nice to have this function in a common source file with armv8-app.py but not found a conveniant way to do this yet
+
+def ParseInfoArgs(abi, arguments):
+    MAX_REGISTERS = abi['MAX_REGISTERS']
+    ARGS_LENGTH = abi['ARGS_LENGTH']
+    CALLEE_SAVED_START = abi['CALLEE_SAVED_START']
+    CALLEE_SAVED_LENGTH = abi['CALLEE_SAVED_LENGTH']
+    TEMPORARY_START = abi['TEMPORARY_START']
+    TEMPORARY_LENGTH = abi['TEMPORARY_LENGTH']
 
     length = MAX_REGISTERS
-    start = float_start
+    start = abi['FLOAT_START']
+    type = abi['type']
 
     args = gdb.string_to_argv(arguments)
     argc = len(args)
@@ -191,17 +200,15 @@ info single  [[start [length]] | [args|callee|temp]]
         start: start register (0-31)
        length: number of registers:
          args: arguments 0-7
-       callee: callee saved 8-16
-    temporary: 17-31
+       callee: callee saved 8-15
+    temporary: 16-31
 default: info single 0, 32"""
 
    def __init__(self):
        super(InfoSingle, self).__init__("info single", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
-       SINGLE_START = 132
-
-       start, length = ParseInfoArgs("single", SINGLE_START, arguments)
+       start, length = ParseInfoArgs(single_abi, arguments)
        if start == -1: # error
            return
 
@@ -215,17 +222,15 @@ info double  [[start [length]] | [args|callee|temp]]
         start: start register (0-31)
        length: number of registers:
          args: arguments 0-7
-       callee: callee saved 8-16
-    temporary: 17-31
+       callee: callee saved 8-15
+    temporary: 16-31
 default: info double 0, 32"""
 
    def __init__(self):
        super(InfoDouble, self).__init__("info double", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
-       DOUBLE_START = 100
-
-       start, length = ParseInfoArgs("double", DOUBLE_START, arguments)
+       start, length = ParseInfoArgs(double_abi, arguments)
        if start == -1: # error
            return
 
