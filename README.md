@@ -2,9 +2,7 @@
 Using the Python API for gdb to produce commands, etc to help improve debugging ARM assembler.
 ```
 info single/double to list the float registers around a specific selection or by ABI classification.
-
 pretty printer to filter only the floating point part of the unions used by gdb.
-
 Event handler when a register is changed by a user. I'm not sure how useful this is but achieving it was
 a step toward better understanding of the Python API and a precursor to the info commands
 ```
