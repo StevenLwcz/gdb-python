@@ -1,24 +1,12 @@
-# This python file contains three sections:
+# This python file contains several sections:
 # 1. A pretty printer for floating point registers
 # 2. An event hook for register change by the user
 # 3. A custom gdb command info single and info double to display floating point registers
+# 4. More info commands to display the system registers in a nicer format - work in progress
 #
 # gdb -x aarch64pp.py <exe>
 #
-# potential use case of info single/double
-# (gdb) define hook-stop
-# > info single 10 3
-# > end
-#
-# gdb will now display the 3 floating point registers after every n/s command.
-#
-#
-# These functions were written in order to learn about and explore the GDB Python API while learning about ARM assembler.
 # Developed and tested with gdb 8.2.1 on aarch64
-# armv8-a version coming soon.
-#
-# Future aim is to create custom tui windows for floating point registers
-# since in aarch64 they are too verbose and not as compact as the armv8-a versions
 #
 # --------------------
 
@@ -76,7 +64,6 @@ gdb.printing.register_pretty_printer(gdb.current_objfile(), pp, replace=True)
 
 
 # (gdb) info pretty-printer
-# (gdb) g/D 
 
 # --------------------
 
@@ -126,6 +113,16 @@ gdb.events.register_changed.connect(reg_changed)
 
 #
 # info single/double
+#
+# Potential use case of info single/double
+# (gdb) define hook-stop
+# > info single 10 3
+# > end
+#
+# gdb will now display the 3 floating point registers after every n/s command.
+#
+# Also tui reg float is quite cluttered so the info commands should improve
+# inspecting the floating point registers
 #
 
 single_abi = {'type': 'single', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
@@ -239,3 +236,80 @@ default: info double 0, 32"""
 InfoDouble()
 
 print("aarch64pp.py loaded")
+
+# --------------------
+
+# info cpsr
+
+class InfoCpsr(gdb.Command):
+   """Display the status of the pstate/cpsr register and condition codes
+EQ	Equal to
+NE	Not equal to
+	Unsigned
+HS	Greater than, equal to
+HI	Greater than
+LS	Less than, equal to
+LO	Less than
+	Signed
+GE	Greater than, equal to (signed)
+GT	Greater than (signed)
+LE	Less than, equal to
+LT	Less than
+	Misc
+MI	Minus
+PL	Positive
+VC	No overflow 
+VS	overflow 
+"""
+
+   def __init__(self):
+       super(InfoCpsr, self).__init__("info cpsr", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       CPSR_REGISTER = 33
+       N_FLAG = 0x80000000  # Negative
+       Z_FLAG = 0x40000000  # Zero
+       C_FLAG = 0x20000000  # Carry
+       V_FLAG = 0x10000000  # Overflow
+
+       frame = gdb.selected_frame()
+       name = regs[CPSR_REGISTER]
+       reg = frame.read_register(name)
+       n = (reg & N_FLAG) == N_FLAG
+       z = (reg & Z_FLAG) == Z_FLAG
+       c = (reg & C_FLAG) == C_FLAG
+       v = (reg & V_FLAG) == V_FLAG
+       str = name + ":"
+       if n: str +=" N"
+       if z: str +=" Z"
+       if c: str +=" C"
+       if v: str +=" V"
+
+       str += " -"
+       if not z: str += " NE"
+       else: str += " EQ"
+
+       # unsigned
+       str += " -"
+       if c and not z: str += " HI"  # greater than (Higher)
+       if c: str += " HS"            # greater than, equal to
+       else: str += " LO"            # less than (Lower)
+       if (not c) or z: str += " LS" # less than, equal to
+
+       # signed
+       str += " -"
+       if (not z) and n == v: str += " GT"
+       if n == v: str += " GE"
+       if not n == v: str += " LT"
+       if z or (not n == v): str += " LE"
+
+       #
+       str += " -"
+       if n: str += " MI"
+       else: str += " PL"
+       if v: str += " VS"
+       else: str += " VC"
+
+       print(str)
+
+InfoCpsr()

@@ -13,4 +13,4 @@ Future plans:
     create new tui windows to give filtered view since tui reg float and tui reg vector display more info than you are interested in
 
 ```
-    
+These functions were written in order to learn about and explore the GDB Python API while learning about ARM assembler.

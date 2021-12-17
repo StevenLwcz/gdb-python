@@ -12,13 +12,7 @@
 #
 # gdb will now display the 3 floating point registers after every n/s command.
 #
-#
-# These functions were written in order to learn about and explore the GDB Python API while learning about ARM assembler.
 # Developed and tested with gdb 8.2.1 on armv8-a
-#
-# Future aim is to create custom tui windows for floating point registers
-# since in aarch64 they are too verbose and not as compact as the armv8-a versions
-# Will require gdb 10.0 
 #
 # --------------------
 
