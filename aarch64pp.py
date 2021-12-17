@@ -36,14 +36,14 @@ class FloatRegPrinter(object):
     def __init__(self, val):
         self.val = val
 
+# by retuning a float we can get the display of the register without the f = 
     def to_string(self):
-        pass
+        return(float(self.val['f']))
 
 # Use children method else the tui reg float window won't display the values in hex and float
 # The view was better in armv8-a since Snn were float but now they are a builtin union
-
-    def children(self):
-        yield "f", self.val['f']
+    # def children(self):
+        # yield "f", float(self.val['f'])
         # yield "s", self.val['s']
         # yield "u", self.val['u']
  
