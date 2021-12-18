@@ -318,19 +318,23 @@ InfoCpsr()
 
 class InfoFpcr(gdb.Command):
    """Display the status of the floating point control register (fpcr) register
-      Only shows the Rounding Mode. Can easily be expanded to show other bits as desired"""
-
+      Only shows the Rounding Mode. Can easily be expanded to show other bits as desired
+RN	Round to nearest (tie zero)
+RP	Round towards plus infinity (ceil)
+RM	Round towards minus infinity (floor)
+RZ	Round towards zero (truncate)"""
+      
    def __init__(self):
        super(InfoFpcr, self).__init__("info fpcr", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
        FPCR_REGISTER = 67
 
-       RM_MASK = 0x600000 # 23-22
-       RN_FLAG = 0x000000 # Round towards nearest
-       RP_FLAG = 0x400000 # Round towards + infinity
-       RM_FLAG = 0x200000 # Round towards - infinity
-       RZ_FLAG = 0x600000 # Round towards zero
+       RM_MASK = 0xc00000 # 23-22
+       RN_FLAG = 0x000000 # Round to nearest tie zero
+       RP_FLAG = 0x400000 # Round towards + infinity (ceil)
+       RM_FLAG = 0x800000 # Round towards - infinity (floor)
+       RZ_FLAG = 0xc00000 # Round towards zero (truncate)
 
        frame = gdb.selected_frame()
        name = regs[FPCR_REGISTER]
@@ -339,13 +343,13 @@ class InfoFpcr(gdb.Command):
 
        mode = RM_MASK & reg
        if mode == RN_FLAG:
-           str += "Round towards nearest"
+           str += "RN"
        elif mode == RP_FLAG:
-           str += "Round towards plus infinity"
+           str += "RP"
        elif mode == RM_FLAG:
-           str += "Round towards minus infinity"
+           str += "RM"
        else:
-           str += "Round towards zero"
+           str += "RZ"
 
        print(str)
 
