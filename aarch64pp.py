@@ -286,8 +286,8 @@ VS	overflow
        if v: str +=" V"
 
        str += " -"
-       if not z: str += " NE"
-       else: str += " EQ"
+       if z: str += " EQ"
+       else: str += " NE"
 
        # unsigned
        str += " -"
