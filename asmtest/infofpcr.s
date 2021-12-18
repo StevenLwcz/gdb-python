@@ -8,10 +8,24 @@ _start:
     mov x3, #0b00000000100000000000000000000000 // - inf (floor)
     mov x4, #0b00000000110000000000000000000000 // truncate
 
+    fmov s0, 10.5
+
+/* (gdb) define hook-stop
+ * >info fpcr
+ * >p $s1
+ * >end
+ */
+
     msr fpcr, x1
+    frinti s1, s0
     msr fpcr, x2
+    frinti s1, s0
     msr fpcr, x3
+    frinti s1, s0
     msr fpcr, x4
+    frinti s1, s0
+
+    frinta s1, s0  /* tie away */
 
 end:
     mov     x0, #0      /* status */
