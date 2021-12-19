@@ -125,11 +125,14 @@ gdb.events.register_changed.connect(reg_changed)
 # inspecting the floating point registers
 #
 
+general_abi = {'type': 'general', 'MAX_REGISTERS': 31, 'ARGS_LENGTH': 9, 'CALLEE_SAVED_START': 19, 'CALLEE_SAVED_LENGTH': 11,
+           'TEMPORARY_START': 9, 'TEMPORARY_LENGTH': 10, 'REG_START': 0}
+
 single_abi = {'type': 'single', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
-           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 132}
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'REG_START': 132}
 
 double_abi = {'type': 'double', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
-           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 100}
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'REG_START': 100}
 
 # would be nice to have this function in a common source file with armv8-app.py but not found a conveniant way to do this yet
 
@@ -142,7 +145,7 @@ def ParseInfoArgs(abi, arguments):
     TEMPORARY_LENGTH = abi['TEMPORARY_LENGTH']
 
     length = MAX_REGISTERS
-    start = abi['FLOAT_START']
+    start = abi['REG_START']
     type = abi['type']
 
     args = gdb.string_to_argv(arguments)
@@ -193,13 +196,13 @@ def DumpFloatRegs(start, length):
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
-info single  [[start [length]] | [args|callee|temp]] 
+info single [[start [length]] | [args|callee|temp]] 
         start: start register (0-31)
        length: number of registers:
          args: arguments 0-7
        callee: callee saved 8-15
     temporary: 16-31
-default: info single 0, 32"""
+default: info single 0 32"""
 
    def __init__(self):
        super(InfoSingle, self).__init__("info single", gdb.COMMAND_DATA)
@@ -215,13 +218,13 @@ InfoSingle()
 
 class InfoDouble(gdb.Command):
    """List double precision floating point registers and values
-info double  [[start [length]] | [args|callee|temp]] 
+info double [[start [length]] | [args|callee|temp]] 
         start: start register (0-31)
        length: number of registers:
          args: arguments 0-7
        callee: callee saved 8-15
     temporary: 16-31
-default: info double 0, 32"""
+default: info double 0 32"""
 
    def __init__(self):
        super(InfoDouble, self).__init__("info double", gdb.COMMAND_DATA)
@@ -235,7 +238,33 @@ default: info double 0, 32"""
 
 InfoDouble()
 
-print("aarch64pp.py loaded")
+class InfoGeneral(gdb.Command):
+   """List general registers and values
+info general [[start [length]] | [args|callee|temp]] 
+        start: start register (0-30)
+       length: number of registers:
+         args: arguments 0-8 (XR: 8)
+    temporary: 9-18 (IP0: 16, IP1: 17, Platform specific: 18)
+       callee: callee saved 19-29 (FP: 29)
+     link reg: 30
+default: info general 0 31"""
+
+   def __init__(self):
+       super(InfoGeneral, self).__init__("info general", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       start, length = ParseInfoArgs(general_abi, arguments)
+       if start == -1: # error
+           return
+
+       print(start, length)
+       frame = gdb.selected_frame()
+       for i in range(start,start + length):
+           name = regs[i]
+           reg = frame.read_register(name)
+           print(name + "\t" +  str(reg) + "\t" + hex(reg))
+
+InfoGeneral()
 
 # --------------------
 
@@ -354,3 +383,5 @@ RZ	Round towards zero (truncate)"""
        print(str)
 
 InfoFpcr()
+
+print("aarch64pp.py loaded")
