@@ -93,6 +93,12 @@ regs = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"
 , "s28", "s29", "s30", "s31", "q0", "q1", "q2", "q3", "q4", "q5"
 , "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"]
 
+def GetRegister(i):
+   frame = gdb.selected_frame()
+   name = regs[i]
+   reg = frame.read_register(name)
+   return name, reg
+
 def reg_changed(event):
     name = regs[event.regnum]
     print("%s" % event.frame.read_register(name))
@@ -218,5 +224,127 @@ default: info double 0, 32"""
        DumpDoubleFloatRegs(start, length)
 
 InfoDouble()
+
+# --------------------
+
+def UnpackConditionCodes(reg):
+    N_FLAG = 0x80000000  # Negative
+    Z_FLAG = 0x40000000  # Zero
+    C_FLAG = 0x20000000  # Carry
+    V_FLAG = 0x10000000  # Overflow
+    n = (reg & N_FLAG) == N_FLAG
+    z = (reg & Z_FLAG) == Z_FLAG
+    c = (reg & C_FLAG) == C_FLAG
+    v = (reg & V_FLAG) == V_FLAG
+    return n, z, c, v
+
+# info cpsr armv8-a
+
+class InfoCpsr(gdb.Command):
+   """Display the status of the pstate/cpsr register and condition codes
+EQ	Equal to
+NE	Not equal to
+	Unsigned
+HS	Greater than, equal to
+HI	Greater than
+LS	Less than, equal to
+LO	Less than
+	Signed
+GE	Greater than, equal to (signed)
+GT	Greater than (signed)
+LE	Less than, equal to
+LT	Less than
+	Misc
+MI	Minus
+PL	Positive
+VC	No overflow 
+VS	overflow 
+"""
+
+   def __init__(self):
+       super(InfoCpsr, self).__init__("info cpsr", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       CPSR_REGISTER = 25
+
+       str, reg = GetRegister(CPSR_REGISTER)
+       str += ":"
+
+       n, z, c, v = UnpackConditionCodes(reg)
+       if n: str +=" N"
+       if z: str +=" Z"
+       if c: str +=" C"
+       if v: str +=" V"
+
+       str += " -"
+       if z: str += " EQ"
+       else: str += " NE"
+
+       # unsigned
+       str += " -"
+       if c and not z: str += " HI"  # greater than (Higher)
+       if c: str += " HS"            # greater than, equal to
+       else: str += " LO"            # less than (Lower)
+       if (not c) or z: str += " LS" # less than, equal to
+
+       # signed
+       str += " -"
+       if (not z) and n == v: str += " GT"
+       if n == v: str += " GE"
+       if not n == v: str += " LT"
+       if z or (not n == v): str += " LE"
+
+       #
+       str += " -"
+       if n: str += " MI"
+       else: str += " PL"
+       if v: str += " VS"
+       else: str += " VC"
+
+       print(str)
+
+InfoCpsr()
+
+# info fpscr  floating point system and control register
+
+class InfoFpscr(gdb.Command):
+   """Display the status of the floating point system and control register (fpcr) register
+Shows status of condition flags (CNZV).
+Shows the Rounding Mode. 
+RN	Round to nearest (tie zero)
+RP	Round towards plus infinity (ceil)
+RM	Round towards minus infinity (floor)
+RZ	Round towards zero (truncate)"""
+      
+   def __init__(self):
+       super(InfoFpscr, self).__init__("info fpscr", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       FPSCR_REGISTER = 90
+
+       RM_MASK = 0xc00000 # 23-22
+       RN_FLAG = 0x000000 # Round to nearest tie zero
+       RP_FLAG = 0x400000 # Round towards + infinity (ceil)
+       RM_FLAG = 0x800000 # Round towards - infinity (floor)
+       RZ_FLAG = 0xc00000 # Round towards zero (truncate)
+
+       str, reg = GetRegister(FPSCR_REGISTER)
+       str += ":"
+
+       n, z, c, v = UnpackConditionCodes(reg)
+       if n: str +=" N"
+       if z: str +=" Z"
+       if c: str +=" C"
+       if v: str +=" V"
+
+       mode = RM_MASK & reg
+       if mode == RN_FLAG: str += " RN"
+       elif mode == RP_FLAG: str += "RP"
+       elif mode == RM_FLAG: str += "RM"
+       else: str += "RZ"
+
+       print(str)
+
+InfoFpscr()
 
 print("aarmv8-app.py loaded")
