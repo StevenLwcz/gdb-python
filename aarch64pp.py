@@ -318,7 +318,6 @@ InfoCpsr()
 
 class InfoFpcr(gdb.Command):
    """Display the status of the floating point control register (fpcr) register
-      Only shows the Rounding Mode. Can easily be expanded to show other bits as desired
 RN	Round to nearest (tie zero)
 RP	Round towards plus infinity (ceil)
 RM	Round towards minus infinity (floor)
