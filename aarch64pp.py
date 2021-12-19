@@ -112,9 +112,9 @@ gdb.events.register_changed.connect(reg_changed)
 # --------------------
 
 #
-# info single/double
+# info general/single/double
 #
-# Potential use case of info single/double
+# Potential use case of info general/single/double
 # (gdb) define hook-stop
 # > info single 10 3
 # > end
@@ -257,7 +257,6 @@ default: info general 0 31"""
        if start == -1: # error
            return
 
-       print(start, length)
        frame = gdb.selected_frame()
        for i in range(start,start + length):
            name = regs[i]

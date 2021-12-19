@@ -5,7 +5,7 @@
 #
 # gdb -x armv8-app.py <exe>
 #
-# potential use case of info single/double
+# potential use case of info general/single/double
 # (gdb) define hook-stop
 # > info double 10 3
 # > end
@@ -108,14 +108,17 @@ gdb.events.register_changed.connect(reg_changed)
 # --------------------
 
 #
-# info single/double
+# info general/single/double
 #
 
+general_abi = {'type': 'general', 'MAX_REGISTERS': 16, 'ARGS_LENGTH': 4, 'CALLEE_SAVED_START': 5, 'CALLEE_SAVED_LENGTH': 7,
+           'TEMPORARY_START': 12, 'TEMPORARY_LENGTH': 1, 'REG_START': 0}
+
 single_abi = {'type': 'single', 'MAX_REGISTERS': 32, 'ARGS_LENGTH': 16, 'CALLEE_SAVED_START': 16, 'CALLEE_SAVED_LENGTH': 16,
-           'TEMPORARY_START': 0, 'TEMPORARY_LENGTH': 0, 'FLOAT_START': 91}
+           'TEMPORARY_START': 0, 'TEMPORARY_LENGTH': 0, 'REG_START': 91}
 
 double_abi = {'type': 'double', 'MAX_REGISTERS': 16, 'ARGS_LENGTH': 8, 'CALLEE_SAVED_START': 8, 'CALLEE_SAVED_LENGTH': 8,
-           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'FLOAT_START': 58}
+           'TEMPORARY_START': 16, 'TEMPORARY_LENGTH': 16, 'REG_START': 58}
 
 def ParseInfoArgs(abi, arguments):
     MAX_REGISTERS = abi['MAX_REGISTERS']
@@ -126,7 +129,7 @@ def ParseInfoArgs(abi, arguments):
     TEMPORARY_LENGTH = abi['TEMPORARY_LENGTH']
 
     length = MAX_REGISTERS
-    start = abi['FLOAT_START']
+    start = abi['REG_START']
     type = abi['type']
 
     args = gdb.string_to_argv(arguments)
@@ -224,6 +227,36 @@ default: info double 0, 32"""
        DumpDoubleFloatRegs(start, length)
 
 InfoDouble()
+
+class InfoGeneral(gdb.Command):
+   """List general registers and values
+info general [[start [length]] | [args|callee|temp]] 
+        start: start register (0-15)
+       length: number of registers:
+         args: arguments 0-3
+       callee: callee saved 4-11 (Platform specific: 9, FP: 11)
+    temporary: 12 (IP: 12)
+           SP: 13
+           LR: 14
+           PC: 15
+default: info general 0 15"""
+
+   def __init__(self):
+       super(InfoGeneral, self).__init__("info general", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       start, length = ParseInfoArgs(general_abi, arguments)
+       if start == -1: # error
+           return
+
+       frame = gdb.selected_frame()
+       for i in range(start,start + length):
+           name = regs[i]
+           reg = frame.read_register(name)
+           print(name + "\t" +  str(reg) + "\t" + hex(reg))
+
+InfoGeneral()
+
 
 # --------------------
 
