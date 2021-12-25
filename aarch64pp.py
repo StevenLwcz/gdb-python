@@ -382,4 +382,30 @@ RZ	Round towards zero (truncate)"""
 
 InfoFpcr()
 
+# fpsr
+
+class InfoFpsr(gdb.Command):
+   """Display the status of the floating point status register (fpsr) register
+QC	Saturation
+"""
+   def __init__(self):
+       super(InfoFpsr, self).__init__("info fpsr", gdb.COMMAND_DATA)
+
+   def invoke(self, arguments, from_tty):
+       FPSR_REGISTER = 66
+
+       Q_FLAG = 0x08000000  # Negative
+
+       frame = gdb.selected_frame()
+       name = regs[FPSR_REGISTER]
+       reg = frame.read_register(name)
+       str = name + ": "
+
+       q = (reg & Q_FLAG) == Q_FLAG
+       if q: str += "QC"
+
+       print(str)
+
+InfoFpsr()
+
 print("aarch64pp.py loaded")
