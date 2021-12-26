@@ -338,10 +338,10 @@ VS	overflow
 
 InfoCpsr()
 
-# info fpscr  floating point system and control register
+# info fpscr  floating point status and control register
 
 class InfoFpscr(gdb.Command):
-   """Display the status of the floating point system and control register (fpcr) register
+   """Display the status of the floating point status and control register (fpcr) register
 Shows status of condition flags (CNZV).
 Shows the Rounding Mode. 
 RN	Round to nearest (tie zero)
