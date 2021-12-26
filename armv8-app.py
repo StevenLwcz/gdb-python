@@ -1,8 +1,9 @@
 # This python file contains three sections:
 # 1. A pretty printer for floating point registers
 # 2. An event hook for register change by the user
-# 3. A custom gdb command info single and info double to display floating point registers
-#
+# 3. Custom gdb commands info general/single/double to display the various register groups
+# 4. info fpscr to decode some of the bits in the control register.
+
 # gdb -x armv8-app.py <exe>
 #
 # potential use case of info general/single/double

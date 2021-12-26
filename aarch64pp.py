@@ -1,8 +1,8 @@
 # This python file contains several sections:
 # 1. A pretty printer for floating point registers
 # 2. An event hook for register change by the user
-# 3. A custom gdb command info single and info double to display floating point registers
-# 4. More info commands to display the system registers in a nicer format - work in progress
+# 3. Custom gdb commands info general/single/double to display the various registor groups
+# 4. info fpsr and info fpcr to decode some of the bits in these registers. Work in progress
 #
 # gdb -x aarch64pp.py <exe>
 #
