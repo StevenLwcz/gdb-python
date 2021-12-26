@@ -349,7 +349,8 @@ class InfoFpcr(gdb.Command):
 RN	Round to nearest (tie zero)
 RP	Round towards plus infinity (ceil)
 RM	Round towards minus infinity (floor)
-RZ	Round towards zero (truncate)"""
+RZ	Round towards zero (truncate)
+DZE	Divide by Zero Enabled """
       
    def __init__(self):
        super(InfoFpcr, self).__init__("info fpcr", gdb.COMMAND_DATA)
@@ -362,6 +363,8 @@ RZ	Round towards zero (truncate)"""
        RP_FLAG = 0x400000 # Round towards + infinity (ceil)
        RM_FLAG = 0x800000 # Round towards - infinity (floor)
        RZ_FLAG = 0xc00000 # Round towards zero (truncate)
+       
+       DZE_FLAG = 0x200 # Divide by Zero Enabled
 
        frame = gdb.selected_frame()
        name = regs[FPCR_REGISTER]
@@ -378,6 +381,9 @@ RZ	Round towards zero (truncate)"""
        else:
            str += "RZ"
 
+       d = (reg & DZE_FLAG) == DZE_FLAG
+       if d: str += " DZE"
+
        print(str)
 
 InfoFpcr()
@@ -387,22 +393,27 @@ InfoFpcr()
 class InfoFpsr(gdb.Command):
    """Display the status of the floating point status register (fpsr) register
 QC	Saturation
-"""
+DZC	Divide by Zero """
+
    def __init__(self):
        super(InfoFpsr, self).__init__("info fpsr", gdb.COMMAND_DATA)
 
    def invoke(self, arguments, from_tty):
        FPSR_REGISTER = 66
 
-       Q_FLAG = 0x08000000  # Negative
+       Q_FLAG = 0x08000000  # QC  Saturation
+       D_FLAG = 0x00000002  # DZC Divide by zero
 
        frame = gdb.selected_frame()
        name = regs[FPSR_REGISTER]
        reg = frame.read_register(name)
-       str = name + ": "
+       str = name + ":"
 
        q = (reg & Q_FLAG) == Q_FLAG
-       if q: str += "QC"
+       if q: str += " QC"
+
+       d = (reg & D_FLAG) == D_FLAG
+       if d: str += " DZC"
 
        print(str)
 
