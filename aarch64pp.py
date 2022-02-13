@@ -468,20 +468,19 @@ class RegWindow(object):
         self.reglist = list
 
     def close(self):
-        pass
+        gdb.events.before_prompt.disconnect(self.render)
 
     def render(self):
-        if self.tui.is_valid():
-            self.tui.erase()
-            frame = gdb.selected_frame()
-            width = self.tui.width
-            for name in self.reglist:
-                reg = frame.read_register(name)
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
-                width = width - 46
-                if width < 46:
-                    self.tui.write(NL)
-                    width = self.tui.width
+        self.tui.erase()
+        frame = gdb.selected_frame()
+        width = self.tui.width
+        for name in self.reglist:
+            reg = frame.read_register(name)
+            self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
+            width = width - 46
+            if width < 46:
+                self.tui.write(NL)
+                width = self.tui.width
 
     def hscroll(self, num):
         pass
