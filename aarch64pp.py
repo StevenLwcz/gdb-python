@@ -78,34 +78,36 @@ gdb.printing.register_pretty_printer(gdb.current_objfile(), pp, replace=True)
 # frame.read_regiger() needs the name of the register but only the number is avaliable
 # from the frame from the event
  
-# regs list generated from reg.awk
+# reg_dict list generated from reg.awk
 
-regs = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"
-, "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19"
-, "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29"
-, "x30", "sp", "pc", "cpsr", "v0", "v1", "v2", "v3", "v4", "v5"
-, "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15"
-, "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24", "v25"
-, "v26", "v27", "v28", "v29", "v30", "v31", "fpsr", "fpcr", "q0", "q1"
-, "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11"
-, "q12", "q13", "q14", "q15", "q16", "q17", "q18", "q19", "q20", "q21"
-, "q22", "q23", "q24", "q25", "q26", "q27", "q28", "q29", "q30", "q31"
-, "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9"
-, "d10", "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19"
-, "d20", "d21", "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29"
-, "d30", "d31", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"
-, "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "s16", "s17"
-, "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27"
-, "s28", "s29", "s30", "s31", "h0", "h1", "h2", "h3", "h4", "h5"
-, "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15"
-, "h16", "h17", "h18", "h19", "h20", "h21", "h22", "h23", "h24", "h25"
-, "h26", "h27", "h28", "h29", "h30", "h31", "b0", "b1", "b2", "b3"
-, "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13"
-, "b14", "b15", "b16", "b17", "b18", "b19", "b20", "b21", "b22", "b23"
-, "b24", "b25", "b26", "b27", "b28", "b29", "b30", "b31"]
+reg_dict = {0:"x0", 1:"x1", 2:"x2", 3:"x3", 4:"x4", 5:"x5", 6:"x6", 7:"x7", 8:"x8", 9:"x9"
+, 10:"x10", 11:"x11", 12:"x12", 13:"x13", 14:"x14", 15:"x15", 16:"x16", 17:"x17", 18:"x18", 19:"x19"
+, 20:"x20", 21:"x21", 22:"x22", 23:"x23", 24:"x24", 25:"x25", 26:"x26", 27:"x27", 28:"x28", 29:"x29"
+, 30:"x30", 31:"sp", 32:"pc", 33:"cpsr", 34:"v0", 35:"v1", 36:"v2", 37:"v3", 38:"v4", 39:"v5"
+, 40:"v6", 41:"v7", 42:"v8", 43:"v9", 44:"v10", 45:"v11", 46:"v12", 47:"v13", 48:"v14", 49:"v15"
+, 50:"v16", 51:"v17", 52:"v18", 53:"v19", 54:"v20", 55:"v21", 56:"v22", 57:"v23", 58:"v24", 59:"v25"
+, 60:"v26", 61:"v27", 62:"v28", 63:"v29", 64:"v30", 65:"v31", 66:"fpsr", 67:"fpcr", 68:"q0", 69:"q1"
+, 70:"q2", 71:"q3", 72:"q4", 73:"q5", 74:"q6", 75:"q7", 76:"q8", 77:"q9", 78:"q10", 79:"q11"
+, 80:"q12", 81:"q13", 82:"q14", 83:"q15", 84:"q16", 85:"q17", 86:"q18", 87:"q19", 88:"q20", 89:"q21"
+, 90:"q22", 91:"q23", 92:"q24", 93:"q25", 94:"q26", 95:"q27", 96:"q28", 97:"q29", 98:"q30", 99:"q31"
+, 100:"d0", 101:"d1", 102:"d2", 103:"d3", 104:"d4", 105:"d5", 106:"d6", 107:"d7", 108:"d8", 109:"d9"
+, 110:"d10", 111:"d11", 112:"d12", 113:"d13", 114:"d14", 115:"d15", 116:"d16", 117:"d17", 118:"d18", 119:"d19"
+, 120:"d20", 121:"d21", 122:"d22", 123:"d23", 124:"d24", 125:"d25", 126:"d26", 127:"d27", 128:"d28", 129:"d29"
+, 130:"d30", 131:"d31", 132:"s0", 133:"s1", 134:"s2", 135:"s3", 136:"s4", 137:"s5", 138:"s6", 139:"s7"
+, 140:"s8", 141:"s9", 142:"s10", 143:"s11", 144:"s12", 145:"s13", 146:"s14", 147:"s15", 148:"s16", 149:"s17"
+, 150:"s18", 151:"s19", 152:"s20", 153:"s21", 154:"s22", 155:"s23", 156:"s24", 157:"s25", 158:"s26", 159:"s27"
+, 160:"s28", 161:"s29", 162:"s30", 163:"s31", 164:"h0", 165:"h1", 166:"h2", 167:"h3", 168:"h4", 169:"h5"
+, 170:"h6", 171:"h7", 172:"h8", 173:"h9", 174:"h10", 175:"h11", 176:"h12", 177:"h13", 178:"h14", 179:"h15"
+, 180:"h16", 181:"h17", 182:"h18", 183:"h19", 184:"h20", 185:"h21", 186:"h22", 187:"h23", 188:"h24", 189:"h25"
+, 190:"h26", 191:"h27", 192:"h28", 193:"h29", 194:"h30", 195:"h31", 196:"b0", 197:"b1", 198:"b2", 199:"b3"
+, 200:"b4", 201:"b5", 202:"b6", 203:"b7", 204:"b8", 205:"b9", 206:"b10", 207:"b11", 208:"b12", 209:"b13"
+, 210:"b14", 211:"b15", 212:"b16", 213:"b17", 214:"b18", 215:"b19", 216:"b20", 217:"b21", 218:"b22", 219:"b23"
+, 220:"b24", 221:"b25", 222:"b26", 223:"b27", 224:"b28", 225:"b29", 226:"b30", 227:"b31"}
+
+
 
 def reg_changed(event):
-    name = regs[event.regnum]
+    name = reg_dict[event.regnum]
     print("%s" % event.frame.read_register(name))
 
 gdb.events.register_changed.connect(reg_changed)
@@ -191,7 +193,7 @@ def ParseInfoArgs(abi, arguments):
 def DumpFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
-        name = regs[i]
+        name = reg_dict[i]
         reg = frame.read_register(name)
         print(name + "\t" + f'{int(reg["u"]):<#18x}' + "\t" + str(reg['f'])) 
 
@@ -260,7 +262,7 @@ default: info general 0 31"""
 
        frame = gdb.selected_frame()
        for i in range(start,start + length):
-           name = regs[i]
+           name = reg_dict[i]
            reg = frame.read_register(name)
            print(name + "\t" + f'{int(reg):<#18x}' + "\t" + str(reg)) 
 
@@ -302,7 +304,7 @@ VS	overflow
        V_FLAG = 0x10000000  # Overflow
 
        frame = gdb.selected_frame()
-       name = regs[CPSR_REGISTER]
+       name = reg_dict[CPSR_REGISTER]
        reg = frame.read_register(name)
        n = (reg & N_FLAG) == N_FLAG
        z = (reg & Z_FLAG) == Z_FLAG
@@ -368,7 +370,7 @@ DZE	Divide by Zero Enabled """
        DZE_FLAG = 0x200 # Divide by Zero Enabled
 
        frame = gdb.selected_frame()
-       name = regs[FPCR_REGISTER]
+       name = reg_dict[FPCR_REGISTER]
        reg = frame.read_register(name)
        str = name + ": "
 
@@ -406,7 +408,7 @@ DZC	Divide by Zero """
        D_FLAG = 0x00000002  # DZC Divide by zero
 
        frame = gdb.selected_frame()
-       name = regs[FPSR_REGISTER]
+       name = reg_dict[FPSR_REGISTER]
        reg = frame.read_register(name)
        str = name + ":"
 
@@ -425,7 +427,6 @@ InfoFpsr()
 #
 
 # TODO
-# 1. validate registers passed to regwin
 # 2. highlight registers changed from previous render (make toggable perhaps)
 # 4. lots more I'm sure
 
@@ -439,6 +440,12 @@ class RegWinCmd(gdb.Command):
 
     def invoke(self, arguments, from_tty):
         args = gdb.string_to_argv(arguments)
+        values = reg_dict.values()
+        for reg in args:
+            if not reg in values:
+                print("winreg: invalid register %s" % reg)
+                return
+
         self.win.set_list(args) 
 
 regWinCmd = RegWinCmd()

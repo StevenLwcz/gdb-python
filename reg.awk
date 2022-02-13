@@ -1,4 +1,4 @@
-# Turns the file dump from maint print registers reg.txt to a python array called regs
+# Turns the file dump from maint print registers reg.txt to a python dictionary called regs
 #
 # In gdb
 # (gdb) maint print registers reg.txt
@@ -8,19 +8,19 @@
 # reg.py was read into aarch64pp.py
 
 BEGIN { 
-    printf("regs = ["); 
+    printf("reg_dict = {"); 
 }
 
 { 
    if (NR == 1)
-       printf "\"%s\"", $1; 
+       printf "%d:\"%s\"", $2, $1; 
    else
-       printf ", \"%s\"", $1; 
+       printf ", %d:\"%s\"", $2, $1; 
 
    if ((NR % 10) == 0)
        print "";
 }
 
 END { 
-    print("]"); 
+    print("}"); 
 }
