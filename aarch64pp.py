@@ -427,7 +427,6 @@ InfoFpsr()
 # TODO
 # 1. validate registers passed to regwin
 # 2. highlight registers changed from previous render (make toggable perhaps)
-# 3. allow mix of general and float registers 
 # 4. lots more I'm sure
 
 class RegWinCmd(gdb.Command):
@@ -476,7 +475,12 @@ class RegWindow(object):
         width = self.tui.width
         for name in self.reglist:
             reg = frame.read_register(name)
-            self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
+            # probably a better way to do this when I work it out
+            if reg.type.name == "long":
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20} ')
+            else:
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
+
             width = width - 46
             if width < 46:
                 self.tui.write(NL)
