@@ -485,6 +485,12 @@ class RegWindow(object):
             # probably a better way to do this when I work it out
             if reg.type.name == "long":
                 self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20} ')
+            elif name == "pc" or name == "sp" or name == "cpsr":
+                # to do decode cpsr as per info cpsr
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{str(reg):<41}')
+            elif name == "fpsr" or name == "fpcr":
+                # to do decode bit pattern
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20} ')
             else:
                 self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
 
