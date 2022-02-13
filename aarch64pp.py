@@ -3,10 +3,11 @@
 # 2. An event hook for register change by the user
 # 3. Custom gdb commands info general/single/double to display the various registor groups
 # 4. info fpsr and info fpcr to decode some of the bits in these registers. Work in progress
+# 5. A Tui Window to display user selected registers using the regwin command
 #
 # gdb -x aarch64pp.py <exe>
 #
-# Developed and tested with gdb 8.2.1 on aarch64
+# Developed and tested with gdb 10.1.90.20210103-git on aarch64
 #
 # --------------------
 
@@ -419,4 +420,78 @@ DZC	Divide by Zero """
 
 InfoFpsr()
 
-print("aarch64pp.py loaded")
+# --------------------
+# Custom Tui Reg Window
+#
+
+# TODO
+# 1. validate registers passed to regwin
+# 2. highlight registers changed from previous render (make toggable perhaps)
+# 3. allow mix of general and float registers 
+# 4. lots more I'm sure
+
+class RegWinCmd(gdb.Command):
+
+    def __init__(self):
+       super(RegWinCmd, self).__init__("regwin", gdb.COMMAND_DATA)
+
+    def set_win(self, win):
+        self.win = win
+
+    def invoke(self, arguments, from_tty):
+        args = gdb.string_to_argv(arguments)
+        self.win.set_list(args) 
+
+regWinCmd = RegWinCmd()
+
+def RegWinFactory(tui):
+    win = RegWindow(tui)
+    gdb.events.before_prompt.connect(win.render)
+    regWinCmd.set_win(win)
+    return win
+
+
+GREEN = "\x1b[38;5;47m"
+# GREEN = "\x1b[32;1m"
+RESET = "\x1b[0m"
+NL = "\n\n"
+
+class RegWindow(object):
+
+    def __init__(self, tui):
+        self.tui = tui
+        tui.title = "Registers"
+        self.count = 0
+        self.reglist = ['d0', 's1']
+
+    def set_list(self, list):
+        self.reglist = list
+
+    def close(self):
+        pass
+
+    def render(self):
+        if self.tui.is_valid():
+            self.tui.erase()
+            frame = gdb.selected_frame()
+            width = self.tui.width
+            for name in self.reglist:
+                reg = frame.read_register(name)
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
+                width = width - 46
+                if width < 46:
+                    self.tui.write(NL)
+                    width = self.tui.width
+
+    def hscroll(self, num):
+        pass
+
+    def vscroll(self, num):
+        pass
+
+    def click(self, x, y, button):
+        pass
+ 
+gdb.register_window_type("rega64", RegWinFactory)
+
+
