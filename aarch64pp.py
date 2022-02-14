@@ -104,6 +104,8 @@ reg_dict = {0:"x0", 1:"x1", 2:"x2", 3:"x3", 4:"x4", 5:"x5", 6:"x6", 7:"x7", 8:"x
 , 210:"b14", 211:"b15", 212:"b16", 213:"b17", 214:"b18", 215:"b19", 216:"b20", 217:"b21", 218:"b22", 219:"b23"
 , 220:"b24", 221:"b25", 222:"b26", 223:"b27", 224:"b28", 225:"b29", 226:"b30", 227:"b31"}
 
+# new dictionary with keys and values swapped
+reg_name = {value: key for key, value in reg_dict.items()}
 
 
 def reg_changed(event):
@@ -431,6 +433,9 @@ InfoFpsr()
 # 4. lots more I'm sure
 
 class RegWinCmd(gdb.Command):
+    """Add registers to the custom TUI Window rega64
+List of registers space separated. Ranges can be specified. For example:
+regwin x0 x10 - x15 s0 s4 - s6 d5 - d9"""
 
     def __init__(self):
        super(RegWinCmd, self).__init__("regwin", gdb.COMMAND_DATA)
@@ -440,13 +445,30 @@ class RegWinCmd(gdb.Command):
 
     def invoke(self, arguments, from_tty):
         args = gdb.string_to_argv(arguments)
-        values = reg_dict.values()
+        reg_list = []
+        prev = None
+        expand = False
         for reg in args:
-            if not reg in values:
+            if reg == "-":
+                expand = True
+                continue
+            elif not reg in reg_name:
                 print("winreg: invalid register %s" % reg)
                 return
 
-        self.win.set_list(args) 
+            if expand:
+                if prev == None:
+                    print("winreg: no start to range")
+                    return
+                start = reg_name[prev] 
+                finish = reg_name[reg]
+                reg_list.extend([v for k, v in reg_dict.items() if k > start and k <= finish])
+                expand = False
+            else: 
+                prev = reg
+                reg_list.append(reg)
+
+        self.win.set_list(reg_list)
 
 regWinCmd = RegWinCmd()
 
