@@ -272,6 +272,13 @@ InfoGeneral()
 
 # --------------------
 
+# cpsr flags 
+N_FLAG = 0x80000000  # Negative
+Z_FLAG = 0x40000000  # Zero
+C_FLAG = 0x20000000  # Carry
+V_FLAG = 0x10000000  # Overflow
+
+
 # info cpsr
 
 class InfoCpsr(gdb.Command):
@@ -300,10 +307,6 @@ VS	overflow
 
    def invoke(self, arguments, from_tty):
        CPSR_REGISTER = 33
-       N_FLAG = 0x80000000  # Negative
-       Z_FLAG = 0x40000000  # Zero
-       C_FLAG = 0x20000000  # Carry
-       V_FLAG = 0x10000000  # Overflow
 
        frame = gdb.selected_frame()
        name = reg_dict[CPSR_REGISTER]
@@ -490,7 +493,7 @@ class RegWindow(object):
         self.tui = tui
         tui.title = "Registers"
         self.count = 0
-        self.reglist = ['d0', 's1']
+        self.reglist = ['x0', 'd0', 's1']
 
     def set_list(self, list):
         self.reglist = list
@@ -506,15 +509,17 @@ class RegWindow(object):
             reg = frame.read_register(name)
             # probably a better way to do this when I work it out
             if reg.type.name == "long":
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20} ')
-            elif name == "pc" or name == "sp" or name == "cpsr":
-                # to do decode cpsr as per info cpsr
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20}')
+            elif name == "pc" or name == "sp":
                 self.tui.write(GREEN + f'{name:<5}' + RESET + f'{str(reg):<41}')
+            elif name == "cpsr":
+                flags, cond = self.decode_cpsr(reg)
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{flags:<18}  {cond:<20}')
             elif name == "fpsr" or name == "fpcr":
                 # to do decode bit pattern
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20} ')
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20}')
             else:
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20} ')
+                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20}')
 
             width = width - 46
             if width < 46:
@@ -530,6 +535,28 @@ class RegWindow(object):
     def click(self, x, y, button):
         pass
  
-gdb.register_window_type("rega64", RegWinFactory)
+    def decode_cpsr(self, reg):
+       flags = ""
+       n = (reg & N_FLAG) == N_FLAG
+       z = (reg & Z_FLAG) == Z_FLAG
+       c = (reg & C_FLAG) == C_FLAG
+       v = (reg & V_FLAG) == V_FLAG
+       if n: flags +="N "
+       if z: flags +="Z "
+       if c: flags +="C "
+       if v: flags +="V"
+
+       if z: str = "EQ"
+       else: str = "NE"
+
+       # signed
+       if (not z) and n == v: str += " GT"
+       if n == v: str += " GE"
+       if not n == v: str += " LT"
+       if z or (not n == v): str += " LE"
+
+       return flags, str
+
+gdb.register_window_type("arm64", RegWinFactory)
 
 
