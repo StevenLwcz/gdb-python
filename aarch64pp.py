@@ -282,6 +282,40 @@ Z_FLAG = 0x40000000  # Zero
 C_FLAG = 0x20000000  # Carry
 V_FLAG = 0x10000000  # Overflow
 
+# fpcr flags
+RM_MASK = 0xc00000 # 23-22
+RN_FLAG = 0x000000 # Round to nearest tie zero
+RP_FLAG = 0x400000 # Round towards + infinity (ceil)
+RM_FLAG = 0x800000 # Round towards - infinity (floor)
+RZ_FLAG = 0xc00000 # Round towards zero (truncate)
+       
+DZE_FLAG = 0x200 # Divide by Zero Enabled
+
+def decode_fpcr(reg):
+    mode = RM_MASK & reg
+    if mode == RN_FLAG:
+       str = "RN"
+    elif mode == RP_FLAG:
+       str = "RP"
+    elif mode == RM_FLAG:
+       str = "RM"
+    else:
+        str = "RZ"
+
+    if (reg & DZE_FLAG) == DZE_FLAG: str += " DZE"
+
+    return str
+
+# fpsr flags
+Q_FLAG = 0x08000000  # QC  Saturation
+D_FLAG = 0x00000002  # DZC Divide by zero
+
+def decode_fpsr(reg):
+    str = ""
+    if (reg & Q_FLAG) == Q_FLAG: str += "QC "
+    if (reg & D_FLAG) == D_FLAG: str += "DZC"
+
+    return str
 
 # info cpsr
 
@@ -370,33 +404,11 @@ DZE	Divide by Zero Enabled """
    def invoke(self, arguments, from_tty):
        FPCR_REGISTER = 67
 
-       RM_MASK = 0xc00000 # 23-22
-       RN_FLAG = 0x000000 # Round to nearest tie zero
-       RP_FLAG = 0x400000 # Round towards + infinity (ceil)
-       RM_FLAG = 0x800000 # Round towards - infinity (floor)
-       RZ_FLAG = 0xc00000 # Round towards zero (truncate)
-       
-       DZE_FLAG = 0x200 # Divide by Zero Enabled
-
        frame = gdb.selected_frame()
        name = reg_dict[FPCR_REGISTER]
        reg = frame.read_register(name)
-       str = name + ": "
 
-       mode = RM_MASK & reg
-       if mode == RN_FLAG:
-           str += "RN"
-       elif mode == RP_FLAG:
-           str += "RP"
-       elif mode == RM_FLAG:
-           str += "RM"
-       else:
-           str += "RZ"
-
-       d = (reg & DZE_FLAG) == DZE_FLAG
-       if d: str += " DZE"
-
-       print(str)
+       print(GREEN + name + RESET + ": " + decode_fpcr(reg))
 
 InfoFpcr()
 
@@ -413,21 +425,10 @@ DZC	Divide by Zero """
    def invoke(self, arguments, from_tty):
        FPSR_REGISTER = 66
 
-       Q_FLAG = 0x08000000  # QC  Saturation
-       D_FLAG = 0x00000002  # DZC Divide by zero
-
        frame = gdb.selected_frame()
        name = reg_dict[FPSR_REGISTER]
        reg = frame.read_register(name)
-       str = name + ":"
-
-       q = (reg & Q_FLAG) == Q_FLAG
-       if q: str += " QC"
-
-       d = (reg & D_FLAG) == D_FLAG
-       if d: str += " DZC"
-
-       print(str)
+       print(GREEN + name + RESET + ": " + decode_fpsr(reg))
 
 InfoFpsr()
 
@@ -515,9 +516,12 @@ class RegWindow(object):
             elif name == "cpsr":
                 flags, cond = self.decode_cpsr(reg)
                 self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18}  {cond:<21}')
-            elif name == "fpsr" or name == "fpcr":
-                # to do decode bit pattern
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {int(reg):<21}')
+            elif name == "fpcr":
+                str = decode_fpcr(reg)
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str:<21}')
+            elif name == "fpsr":
+                str = decode_fpsr(reg)
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str:<21}')
             else:
                 self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {float(reg["f"]):<21}')
 
