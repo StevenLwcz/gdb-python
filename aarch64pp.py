@@ -282,6 +282,43 @@ Z_FLAG = 0x40000000  # Zero
 C_FLAG = 0x20000000  # Carry
 V_FLAG = 0x10000000  # Overflow
 
+def decode_cpsr(reg, extra):
+   flags = ""
+   n = (reg & N_FLAG) == N_FLAG
+   z = (reg & Z_FLAG) == Z_FLAG
+   c = (reg & C_FLAG) == C_FLAG
+   v = (reg & V_FLAG) == V_FLAG
+   if n: flags +="N "
+   if z: flags +="Z "
+   if c: flags +="C "
+   if v: flags +="V"
+
+   if z: str = "EQ"
+   else: str = "NE"
+
+   # signed
+   if (not z) and n == v: str += " GT"
+   if n == v: str += " GE"
+   if not n == v: str += " LT"
+   if z or (not n == v): str += " LE"
+
+   if extra:
+       # unsigned
+       str += " -"
+       if c and not z: str += " HI"  # greater than (Higher)
+       if c: str += " HS"            # greater than, equal to
+       else: str += " LO"            # less than (Lower)
+       if (not c) or z: str += " LS" # less than, equal to
+
+       #
+       str += " -"
+       if n: str += " MI"
+       else: str += " PL"
+       if v: str += " VS"
+       else: str += " VC"
+
+   return flags, str
+
 # fpcr flags
 RM_MASK = 0xc00000 # 23-22
 RN_FLAG = 0x000000 # Round to nearest tie zero
@@ -349,42 +386,8 @@ VS	overflow
        frame = gdb.selected_frame()
        name = reg_dict[CPSR_REGISTER]
        reg = frame.read_register(name)
-       n = (reg & N_FLAG) == N_FLAG
-       z = (reg & Z_FLAG) == Z_FLAG
-       c = (reg & C_FLAG) == C_FLAG
-       v = (reg & V_FLAG) == V_FLAG
-       str = name + ":"
-       if n: str +=" N"
-       if z: str +=" Z"
-       if c: str +=" C"
-       if v: str +=" V"
-
-       str += " -"
-       if z: str += " EQ"
-       else: str += " NE"
-
-       # unsigned
-       str += " -"
-       if c and not z: str += " HI"  # greater than (Higher)
-       if c: str += " HS"            # greater than, equal to
-       else: str += " LO"            # less than (Lower)
-       if (not c) or z: str += " LS" # less than, equal to
-
-       # signed
-       str += " -"
-       if (not z) and n == v: str += " GT"
-       if n == v: str += " GE"
-       if not n == v: str += " LT"
-       if z or (not n == v): str += " LE"
-
-       #
-       str += " -"
-       if n: str += " MI"
-       else: str += " PL"
-       if v: str += " VS"
-       else: str += " VC"
-
-       print(str)
+       flags, str = decode_cpsr(reg, True)
+       print(GREEN + name + RESET + "  " + flags + " - " + str)
 
 InfoCpsr()
 
@@ -437,8 +440,8 @@ InfoFpsr()
 #
 
 # TODO
-# 2. highlight registers changed from previous render (make toggable perhaps)
-# 4. lots more I'm sure
+# 1. highlight registers changed from previous render (make toggable perhaps)
+# 2. regwin add/remove registers maybe  add/remove groups
 
 class RegWinCmd(gdb.Command):
     """Add registers to the custom TUI Window rega64
@@ -514,7 +517,7 @@ class RegWindow(object):
             elif name == "pc" or name == "sp":
                 self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<41}')
             elif name == "cpsr":
-                flags, cond = self.decode_cpsr(reg)
+                flags, cond = decode_cpsr(reg, False)
                 self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18}  {cond:<21}')
             elif name == "fpcr":
                 str = decode_fpcr(reg)
@@ -539,27 +542,6 @@ class RegWindow(object):
     def click(self, x, y, button):
         pass
  
-    def decode_cpsr(self, reg):
-       flags = ""
-       n = (reg & N_FLAG) == N_FLAG
-       z = (reg & Z_FLAG) == Z_FLAG
-       c = (reg & C_FLAG) == C_FLAG
-       v = (reg & V_FLAG) == V_FLAG
-       if n: flags +="N "
-       if z: flags +="Z "
-       if c: flags +="C "
-       if v: flags +="V"
-
-       if z: str = "EQ"
-       else: str = "NE"
-
-       # signed
-       if (not z) and n == v: str += " GT"
-       if n == v: str += " GE"
-       if not n == v: str += " LT"
-       if z or (not n == v): str += " LE"
-
-       return flags, str
 
 gdb.register_window_type("arm64", RegWinFactory)
 
