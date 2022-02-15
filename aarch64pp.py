@@ -32,6 +32,10 @@
 
 import gdb
 
+GREEN = "\x1b[38;5;47m"
+RESET = "\x1b[0m"
+NL = "\n\n"
+
 class FloatRegPrinter(object):
 
     def __init__(self, val):
@@ -197,7 +201,7 @@ def DumpFloatRegs(start, length):
     for i in range(start,start + length):
         name = reg_dict[i]
         reg = frame.read_register(name)
-        print(name + "\t" + f'{int(reg["u"]):<#18x}' + "\t" + str(reg['f'])) 
+        print(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {str(reg["f"])}') 
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
@@ -266,7 +270,7 @@ default: info general 0 31"""
        for i in range(start,start + length):
            name = reg_dict[i]
            reg = frame.read_register(name)
-           print(name + "\t" + f'{int(reg):<#18x}' + "\t" + str(reg)) 
+           print(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str(reg)}') 
 
 InfoGeneral()
 
@@ -482,10 +486,6 @@ def RegWinFactory(tui):
     return win
 
 
-GREEN = "\x1b[38;5;47m"
-# GREEN = "\x1b[32;1m"
-RESET = "\x1b[0m"
-NL = "\n\n"
 
 class RegWindow(object):
 
@@ -509,17 +509,17 @@ class RegWindow(object):
             reg = frame.read_register(name)
             # probably a better way to do this when I work it out
             if reg.type.name == "long":
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {int(reg):<21}')
             elif name == "pc" or name == "sp":
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{str(reg):<41}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<41}')
             elif name == "cpsr":
                 flags, cond = self.decode_cpsr(reg)
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{flags:<18}  {cond:<20}')
+                self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18}  {cond:<21}')
             elif name == "fpsr" or name == "fpcr":
                 # to do decode bit pattern
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg):<#18x}' + "  " + f'{int(reg):<20}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {int(reg):<21}')
             else:
-                self.tui.write(GREEN + f'{name:<5}' + RESET + f'{int(reg["u"]):<#18x}' + "  " + f'{float(reg["f"]):<20}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {float(reg["f"]):<21}')
 
             width = width - 46
             if width < 46:
