@@ -489,8 +489,6 @@ def RegWinFactory(tui):
     regWinCmd.set_win(win)
     return win
 
-
-
 class RegWindow(object):
 
     def __init__(self, tui):
@@ -520,11 +518,11 @@ class RegWindow(object):
                 flags, cond = decode_cpsr(reg, False)
                 self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18}  {cond:<21}')
             elif name == "fpcr":
-                str = decode_fpcr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str:<21}')
+                st = decode_fpcr(reg)
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {st:<21}')
             elif name == "fpsr":
-                str = decode_fpsr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str:<21}')
+                st = decode_fpsr(reg)
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {st:<21}')
             else:
                 self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {float(reg["f"]):<21}')
 
@@ -544,5 +542,3 @@ class RegWindow(object):
  
 
 gdb.register_window_type("arm64", RegWinFactory)
-
-
