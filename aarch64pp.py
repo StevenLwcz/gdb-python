@@ -489,18 +489,21 @@ def RegWinFactory(tui):
     regWinCmd.set_win(win)
     return win
 
+
 class RegWindow(object):
+
+    reglist_save = []
 
     def __init__(self, tui):
         self.tui = tui
         tui.title = "Registers"
-        self.count = 0
-        self.reglist = ['x0', 'd0', 's1']
+        self.reglist = RegWindow.reglist_save
 
     def set_list(self, list):
         self.reglist = list
 
     def close(self):
+        RegWindow.reglist_save = self.reglist
         gdb.events.before_prompt.disconnect(self.render)
 
     def render(self):
@@ -540,5 +543,4 @@ class RegWindow(object):
     def click(self, x, y, button):
         pass
  
-
 gdb.register_window_type("arm64", RegWinFactory)
