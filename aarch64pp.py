@@ -33,6 +33,8 @@
 import gdb
 
 GREEN = "\x1b[38;5;47m"
+BLUE = "\x1b[38;5;14m"
+WHITE = "\x1b[38;5;15m"
 RESET = "\x1b[0m"
 NL = "\n\n"
 
@@ -498,6 +500,7 @@ class RegWindow(object):
         self.tui = tui
         tui.title = "Registers"
         self.reglist = RegWindow.reglist_save
+        self.prev = {}
 
     def set_list(self, list):
         self.reglist = list
@@ -512,22 +515,28 @@ class RegWindow(object):
         width = self.tui.width
         for name in self.reglist:
             reg = frame.read_register(name)
-            # probably a better way to do this when I work it out
+            if name in self.prev and self.prev[name] != reg:
+                hint = BLUE
+            else:
+                hint = WHITE
+
+            self.prev[name] = reg
+
             if reg.type.name == "long":
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {int(reg):<24}')
+                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
             elif name == "pc" or name == "sp":
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<43}')
+                self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
             elif name == "cpsr":
                 flags, cond = decode_cpsr(reg, False)
-                self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18} {cond:<24}')
+                self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
             elif name == "fpcr":
                 st = decode_fpcr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {st:<24}')
+                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
             elif name == "fpsr":
                 st = decode_fpsr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {st:<24}')
+                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
             else:
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x} {str(reg["f"]):<24}') 
+                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {str(reg["f"]):<24}{RESET}') 
             width = width - 48
             if width < 48:
                 self.tui.write(NL)
