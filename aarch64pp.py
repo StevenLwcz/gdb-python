@@ -516,7 +516,7 @@ class RegWindow(object):
             if reg.type.name == "long":
                 self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {int(reg):<24}')
             elif name == "pc" or name == "sp":
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<41}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<43}')
             elif name == "cpsr":
                 flags, cond = decode_cpsr(reg, False)
                 self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18} {cond:<24}')
