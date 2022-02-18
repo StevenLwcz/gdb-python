@@ -514,23 +514,22 @@ class RegWindow(object):
             reg = frame.read_register(name)
             # probably a better way to do this when I work it out
             if reg.type.name == "long":
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {int(reg):<21}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {int(reg):<24}')
             elif name == "pc" or name == "sp":
                 self.tui.write(f'{GREEN}{name:<5}{RESET}{str(reg):<41}')
             elif name == "cpsr":
                 flags, cond = decode_cpsr(reg, False)
-                self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18}  {cond:<21}')
+                self.tui.write(GREEN + f'{GREEN}{name:<5}{RESET}{flags:<18} {cond:<24}')
             elif name == "fpcr":
                 st = decode_fpcr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {st:<21}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {st:<24}')
             elif name == "fpsr":
                 st = decode_fpsr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {st:<21}')
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x} {st:<24}')
             else:
-                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {float(reg["f"]):<21}')
-
-            width = width - 46
-            if width < 46:
+                self.tui.write(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x} {str(reg["f"]):<24}') 
+            width = width - 48
+            if width < 48:
                 self.tui.write(NL)
                 width = self.tui.width
 
