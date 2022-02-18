@@ -442,13 +442,15 @@ InfoFpsr()
 #
 
 # TODO
-# 1. highlight registers changed from previous render (make toggable perhaps)
-# 2. regwin add/remove registers maybe  add/remove groups
+# 1. regwin add/remove registers maybe  add/remove groups
 
 class RegWinCmd(gdb.Command):
-    """Add registers to the custom TUI Window rega64
-List of registers space separated. Ranges can be specified. For example:
-regwin x0 x10 - x15 s0 s4 - s6 d5 - d9"""
+    """Add registers to the custom TUI Window arm64
+List of registers space separated. Ranges can be specified with -. For example:
+  regwin x0 x10 - x15 s0 s4 - s6 d5 - d9
+Special registers: pc, sp, cpsr, fpsr, fpcr
+Toggle display of registers with hex format
+  regwin hex [on|off]"""
 
     def __init__(self):
        super(RegWinCmd, self).__init__("regwin", gdb.COMMAND_DATA)
@@ -461,6 +463,13 @@ regwin x0 x10 - x15 s0 s4 - s6 d5 - d9"""
         reg_list = []
         prev = None
         expand = False
+        if args[0] == "hex":
+            if args[1] == "on":
+                self.win.set_hex(True)
+            else:
+                self.win.set_hex(False)
+            return
+            
         for reg in args:
             if reg == "-":
                 expand = True
@@ -501,9 +510,13 @@ class RegWindow(object):
         tui.title = "Registers"
         self.reglist = RegWindow.reglist_save
         self.prev = {}
+        self.hex = False
 
     def set_list(self, list):
         self.reglist = list
+
+    def set_hex(self, hex):
+        self.hex = hex
 
     def close(self):
         RegWindow.reglist_save = self.reglist
@@ -522,25 +535,46 @@ class RegWindow(object):
 
             self.prev[name] = reg
 
-            if reg.type.name == "long":
-                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
-            elif name == "pc" or name == "sp":
-                self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
-            elif name == "cpsr":
-                flags, cond = decode_cpsr(reg, False)
-                self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
-            elif name == "fpcr":
-                st = decode_fpcr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
-            elif name == "fpsr":
-                st = decode_fpsr(reg)
-                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
+            if self.hex:
+                if reg.type.name == "long":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
+                elif name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
+                elif name == "cpsr":
+                    flags, cond = decode_cpsr(reg, False)
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
+                elif name == "fpcr":
+                    st = decode_fpcr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
+                elif name == "fpsr":
+                    st = decode_fpsr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
+                else:
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {str(reg["f"]):<24}{RESET}') 
+                width = width - 48
+                if width < 48:
+                    self.tui.write(NL)
+                    width = self.tui.width
             else:
-                self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {str(reg["f"]):<24}{RESET}') 
-            width = width - 48
-            if width < 48:
-                self.tui.write(NL)
-                width = self.tui.width
+                if reg.type.name == "long":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<24}{RESET}')
+                elif name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<24}{RESET}')
+                elif name == "cpsr":
+                    flags, cond = decode_cpsr(reg, False)
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}')
+                elif name == "fpcr":
+                    st = decode_fpcr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
+                elif name == "fpsr":
+                    st = decode_fpsr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
+                else:
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["f"]):<24}{RESET}') 
+                width = width - 29
+                if width < 29:
+                    self.tui.write(NL)
+                    width = self.tui.width
 
     def hscroll(self, num):
         pass
