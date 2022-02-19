@@ -550,7 +550,8 @@ class RegWindow(object):
                     st = decode_fpsr(reg)
                     self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
                 elif reg.type.name == "__gdb_builtin_type_vnq":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["s"]):<24}{RESET}') 
+                    st = (hex(int(str(reg["u"]))))
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<43}{RESET}') 
                 elif reg.type.name == "__gdb_builtin_type_vnb":
                     self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {int(reg["s"]):<24}{RESET}')
                 elif reg.type.name == "aarch64v":
@@ -576,7 +577,9 @@ class RegWindow(object):
                     st = decode_fpsr(reg)
                     self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
                 elif reg.type.name == "__gdb_builtin_type_vnq":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["s"]):<24}{RESET}') 
+                    st = (hex(int(str(reg["u"]))))
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<53}{RESET}') 
+                    width = width - 29
                 elif reg.type.name == "__gdb_builtin_type_vnb":
                     self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["s"]):<24}{RESET}') 
                 elif reg.type.name == "aarch64v":
