@@ -3,17 +3,11 @@
 # 2. An event hook for register change by the user
 # 3. Custom gdb commands info general/single/double to display the various register groups
 # 4. info fpscr to decode some of the bits in the control register.
+# 5. A Tui Window to display user selected registers using the regwin command
 
 # gdb -x armv8-app.py <exe>
 #
-# potential use case of info general/single/double
-# (gdb) define hook-stop
-# > info double 10 3
-# > end
-#
-# gdb will now display the 3 floating point registers after every n/s command.
-#
-# Developed and tested with gdb 8.2.1 on armv8-a
+# Developed and tested with gdb 10.1.90.20210103-git on armv8-a
 #
 # --------------------
 
@@ -33,6 +27,12 @@
 # $5 = {u8 = {14, 190, 48, 153, 42, 232, 36, 64}, u16 = {48654, 39216, 59434, 16420}, u32 = {2570108430, 1076160554}, u64 = 46220743872453504, f32 = {-9.13736798e-24, 2.57667017}, f64 = 10.45345}`
 
 import gdb
+
+GREEN = "\x1b[38;5;47m"
+BLUE = "\x1b[38;5;14m"
+WHITE = "\x1b[38;5;15m"
+RESET = "\x1b[0m"
+NL = "\n\n"
 
 class FloatRegPrinter(object):
 
@@ -79,29 +79,29 @@ gdb.printing.register_pretty_printer(gdb.current_objfile(), pp, replace=True)
 # single registers start at 91
 # double registers start at 58
 
-regs = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"
-, "r9", "r10", "r11", "r12", "sp", "lr", "pc", "''", "''", "''"
-, "''", "''", "''", "''", "''", "''", "cpsr", "''", "''", "''"
-, "''", "''", "''", "''", "''", "''", "''", "''", "''", "''"
-, "''", "''", "''", "''", "''", "''", "''", "''", "''", "''"
-, "''", "''", "''", "''", "''", "''", "''", "''", "''", "d0"
-, "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10"
-, "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20"
-, "d21", "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29", "d30"
-, "d31", "fpscr", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"
-, "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "s16", "s17"
-, "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27"
-, "s28", "s29", "s30", "s31", "q0", "q1", "q2", "q3", "q4", "q5"
-, "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"]
+reg_dict = {0:"r0", 1:"r1", 2:"r2", 3:"r3", 4:"r4", 5:"r5", 6:"r6", 7:"r7", 8:"r8", 9:"r9"
+, 10:"r10", 11:"r11", 12:"r12", 13:"sp", 14:"lr", 15:"pc"
+, 25:"cpsr", 58:"d0", 59:"d1"
+, 60:"d2", 61:"d3", 62:"d4", 63:"d5", 64:"d6", 65:"d7", 66:"d8", 67:"d9", 68:"d10", 69:"d11"
+, 70:"d12", 71:"d13", 72:"d14", 73:"d15", 74:"d16", 75:"d17", 76:"d18", 77:"d19", 78:"d20", 79:"d21"
+, 80:"d22", 81:"d23", 82:"d24", 83:"d25", 84:"d26", 85:"d27", 86:"d28", 87:"d29", 88:"d30", 89:"d31"
+, 90:"fpscr", 91:"s0", 92:"s1", 93:"s2", 94:"s3", 95:"s4", 96:"s5", 97:"s6", 98:"s7", 99:"s8"
+, 100:"s9", 101:"s10", 102:"s11", 103:"s12", 104:"s13", 105:"s14", 106:"s15", 107:"s16", 108:"s17", 109:"s18"
+, 110:"s19", 111:"s20", 112:"s21", 113:"s22", 114:"s23", 115:"s24", 116:"s25", 117:"s26", 118:"s27", 119:"s28"
+, 120:"s29", 121:"s30", 122:"s31", 123:"q0", 124:"q1", 125:"q2", 126:"q3", 127:"q4", 128:"q5", 129:"q6"
+, 130:"q7", 131:"q8", 132:"q9", 133:"q10", 134:"q11", 135:"q12", 136:"q13", 137:"q14", 138:"q15"}
+
+# new dictionary with keys and values swapped
+reg_name = {value: key for key, value in reg_dict.items()} 
 
 def GetRegister(i):
    frame = gdb.selected_frame()
-   name = regs[i]
+   name = reg_dict[i]
    reg = frame.read_register(name)
    return name, reg
 
 def reg_changed(event):
-    name = regs[event.regnum]
+    name = reg_dict[event.regnum]
     print("%s" % event.frame.read_register(name))
 
 gdb.events.register_changed.connect(reg_changed)
@@ -174,14 +174,14 @@ def ParseInfoArgs(abi, arguments):
 def DumpSingleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
-        name = regs[i]
+        name = reg_dict[i]
         reg = frame.read_register(name)
         print(name + "\t" +  str(reg) + "\t" + float(reg).hex())
 
 def DumpDoubleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
-        name = regs[i]
+        name = reg_dict[i]
         reg = frame.read_register(name)
         print(name + "\t" +  str(reg['f64']) + "\t" + hex(reg['u64']))
 
@@ -252,25 +252,89 @@ default: info general 0 15"""
 
        frame = gdb.selected_frame()
        for i in range(start,start + length):
-           name = regs[i]
+           name = reg_dict[i]
            reg = frame.read_register(name)
            print(name + "\t" +  str(reg) + "\t" + hex(reg))
 
 InfoGeneral()
 
-
 # --------------------
 
-def UnpackConditionCodes(reg):
-    N_FLAG = 0x80000000  # Negative
-    Z_FLAG = 0x40000000  # Zero
-    C_FLAG = 0x20000000  # Carry
-    V_FLAG = 0x10000000  # Overflow
-    n = (reg & N_FLAG) == N_FLAG
-    z = (reg & Z_FLAG) == Z_FLAG
-    c = (reg & C_FLAG) == C_FLAG
-    v = (reg & V_FLAG) == V_FLAG
-    return n, z, c, v
+RM_MASK = 0xc00000 # 23-22
+RN_FLAG = 0x000000 # Round to nearest tie zero
+RP_FLAG = 0x400000 # Round towards + infinity (ceil)
+RM_FLAG = 0x800000 # Round towards - infinity (floor)
+RZ_FLAG = 0xc00000 # Round towards zero (truncate)
+
+DZE_FLAG = 0x200 # Divide by Zero Enabled
+
+def decode_fpscr(reg):
+     flags = ""
+     n = (reg & N_FLAG) == N_FLAG
+     z = (reg & Z_FLAG) == Z_FLAG
+     c = (reg & C_FLAG) == C_FLAG
+     v = (reg & V_FLAG) == V_FLAG
+     if n: flags +="N "
+     if z: flags +="Z "
+     if c: flags +="C "
+     if v: flags +="V"
+
+     if z: str = "EQ"
+     else: str = "NE"
+
+     mode = RM_MASK & reg
+     if mode == RN_FLAG: str += " RN"
+     elif mode == RP_FLAG: str += "RP"
+     elif mode == RM_FLAG: str += "RM"
+     else: str += "RZ"
+
+     if (reg & DZE_FLAG) == DZE_FLAG: str += " DZE"
+
+     return flags, str
+
+
+# cpsr flags
+N_FLAG = 0x80000000  # Negative
+Z_FLAG = 0x40000000  # Zero
+C_FLAG = 0x20000000  # Carry
+V_FLAG = 0x10000000  # Overflow
+
+def decode_cpsr(reg, extra):
+     flags = ""
+     n = (reg & N_FLAG) == N_FLAG
+     z = (reg & Z_FLAG) == Z_FLAG
+     c = (reg & C_FLAG) == C_FLAG
+     v = (reg & V_FLAG) == V_FLAG
+     if n: flags +="N "
+     if z: flags +="Z "
+     if c: flags +="C "
+     if v: flags +="V"
+
+     if z: str = "EQ"
+     else: str = "NE"
+
+     # signed
+     if (not z) and n == v: str += " GT"
+     if n == v: str += " GE"
+     if not n == v: str += " LT"
+     if z or (not n == v): str += " LE"
+  
+     if extra:
+         # unsigned
+         str += " -"
+         if c and not z: str += " HI"  # greater than (Higher)
+         if c: str += " HS"            # greater than, equal to
+         else: str += " LO"            # less than (Lower)
+         if (not c) or z: str += " LS" # less than, equal to
+
+         #
+         str += " -"
+         if n: str += " MI"
+         else: str += " PL"
+         if v: str += " VS"
+         else: str += " VC"
+
+     return flags, str
 
 # info cpsr armv8-a
 
@@ -301,41 +365,9 @@ VS	overflow
    def invoke(self, arguments, from_tty):
        CPSR_REGISTER = 25
 
-       str, reg = GetRegister(CPSR_REGISTER)
-       str += ":"
-
-       n, z, c, v = UnpackConditionCodes(reg)
-       if n: str +=" N"
-       if z: str +=" Z"
-       if c: str +=" C"
-       if v: str +=" V"
-
-       str += " -"
-       if z: str += " EQ"
-       else: str += " NE"
-
-       # unsigned
-       str += " -"
-       if c and not z: str += " HI"  # greater than (Higher)
-       if c: str += " HS"            # greater than, equal to
-       else: str += " LO"            # less than (Lower)
-       if (not c) or z: str += " LS" # less than, equal to
-
-       # signed
-       str += " -"
-       if (not z) and n == v: str += " GT"
-       if n == v: str += " GE"
-       if not n == v: str += " LT"
-       if z or (not n == v): str += " LE"
-
-       #
-       str += " -"
-       if n: str += " MI"
-       else: str += " PL"
-       if v: str += " VS"
-       else: str += " VC"
-
-       print(str)
+       name, reg = GetRegister(FPSCR_REGISTER)
+       flags, str = decode_cpsr(reg, True)
+       print(GREEN + name + RESET + "  " + flags + " - " + str)
 
 InfoCpsr()
 
@@ -356,29 +388,164 @@ RZ	Round towards zero (truncate)"""
    def invoke(self, arguments, from_tty):
        FPSCR_REGISTER = 90
 
-       RM_MASK = 0xc00000 # 23-22
-       RN_FLAG = 0x000000 # Round to nearest tie zero
-       RP_FLAG = 0x400000 # Round towards + infinity (ceil)
-       RM_FLAG = 0x800000 # Round towards - infinity (floor)
-       RZ_FLAG = 0xc00000 # Round towards zero (truncate)
-
-       str, reg = GetRegister(FPSCR_REGISTER)
-       str += ":"
-
-       n, z, c, v = UnpackConditionCodes(reg)
-       if n: str +=" N"
-       if z: str +=" Z"
-       if c: str +=" C"
-       if v: str +=" V"
-
-       mode = RM_MASK & reg
-       if mode == RN_FLAG: str += " RN"
-       elif mode == RP_FLAG: str += "RP"
-       elif mode == RM_FLAG: str += "RM"
-       else: str += "RZ"
-
-       print(str)
+       name, reg = GetRegister(FPSCR_REGISTER)
+       flags, str = decode_fpscr(reg)
+       print(GREEN + name + RESET + "  " + flags + " - " + str)
 
 InfoFpscr()
 
-print("aarmv8-app.py loaded")
+# --------------------
+# Custom Tui Reg Window
+#
+
+class RegWinCmd(gdb.Command):
+    """Add registers to the custom TUI Window arm32
+List of registers space separated. Ranges can be specified with -. For example:
+  regwin r0  r10 - r12 s0 s4 - s6 d5 - d9
+Special registers: lr, pc, sp, cpsr, fpcsr
+Toggle display of registers with hex format
+  regwin hex [on|off]"""
+
+    def __init__(self):
+       super(RegWinCmd, self).__init__("regwin", gdb.COMMAND_DATA)
+
+    def set_win(self, win):
+        self.win = win
+
+    def invoke(self, arguments, from_tty):
+        args = gdb.string_to_argv(arguments)
+        reg_list = []
+        prev = None
+        expand = False
+        if args[0] == "hex":
+            if args[1] == "on":
+                self.win.set_hex(True)
+            else:
+                self.win.set_hex(False)
+            return
+            
+        for reg in args:
+            if reg == "-":
+                expand = True
+                continue
+            elif not reg in reg_name:
+                print("winreg: invalid register %s" % reg)
+                return
+
+            if expand:
+                if prev == None:
+                    print("winreg: no start to range")
+                    return
+                start = reg_name[prev] 
+                finish = reg_name[reg]
+                reg_list.extend([v for k, v in reg_dict.items() if k > start and k <= finish])
+                expand = False
+            else: 
+                prev = reg
+                reg_list.append(reg)
+
+        self.win.set_list(reg_list)
+
+regWinCmd = RegWinCmd()
+
+def RegWinFactory(tui):
+    win = RegWindow(tui)
+    gdb.events.before_prompt.connect(win.render)
+    regWinCmd.set_win(win)
+    return win
+
+class RegWindow(object):
+
+    reglist_save = []
+
+    def __init__(self, tui):
+        self.tui = tui
+        tui.title = "Registers"
+        self.reglist = RegWindow.reglist_save
+        self.prev = {}
+        self.hex = False
+
+    def set_list(self, list):
+        self.reglist = list
+
+    def set_hex(self, hex):
+        self.hex = hex
+
+    def close(self):
+        RegWindow.reglist_save = self.reglist
+        gdb.events.before_prompt.disconnect(self.render)
+
+    def render(self):
+        self.tui.erase()
+        frame = gdb.selected_frame()
+        width = self.tui.width
+        for name in self.reglist:
+            reg = frame.read_register(name)
+            if name in self.prev and self.prev[name] != reg:
+                hint = BLUE
+            else:
+                hint = WHITE
+
+            self.prev[name] = reg
+
+            if self.hex:
+                if reg.type.name == "uint32_t" or name == "lr":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
+                elif name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
+                elif name == "cpsr":
+                    flags, cond = decode_cpsr(reg, False)
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
+                elif name == "fpscr":
+                    flags, st = decode_fpscr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {flags:<24}{RESET}')
+                elif reg.type.name == "neon_q":
+                    r1 = int(reg["u64"][1])
+                    r2 = int(reg["u64"][0])
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}         ') 
+                elif reg.type.name == "float": # s
+                    r1 = float(reg).hex()
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<18} {float(reg):<24}{RESET}') 
+                else: # d
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u64"]):<#18x} {str(reg["f64"]):<24}{RESET}') 
+                width = width - 48
+                if width < 48:
+                    self.tui.write(NL)
+                    width = self.tui.width
+            else:
+                if reg.type.name == "uint32_t":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<24}{RESET}')
+                elif name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<24}{RESET}')
+                elif name == "lr":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#24x}{RESET}') 
+                elif name == "cpsr":
+                    flags, cond = decode_cpsr(reg, False)
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}')
+                elif name == "fpscr":
+                    flags, st = decode_fpscr(reg)
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{flags + st:<24}{RESET}')
+                elif reg.type.name == "neon_q":
+                    r1 = int(reg["u64"][1])
+                    r2 = int(reg["u64"][0])
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}         ') 
+                    width = width - 29
+                elif reg.type.name == "float": # s
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{float(reg):<24}{RESET}') 
+                else: # d
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{float(reg["f64"]):<24}{RESET}') 
+                width = width - 29
+                if width < 29:
+                    self.tui.write(NL)
+                    width = self.tui.width
+
+    def hscroll(self, num):
+        pass
+
+    def vscroll(self, num):
+        pass
+
+    def click(self, x, y, button):
+        pass
+ 
+gdb.register_window_type("arm32", RegWinFactory)
