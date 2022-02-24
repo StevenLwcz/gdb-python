@@ -450,7 +450,9 @@ List of registers space separated. Ranges can be specified with -. For example:
   regwin x0 x10 - x15 s0 s4 - s6 d5 - d9
 Special registers: pc, sp, cpsr, fpsr, fpcr
 Toggle display of registers with hex format
-  regwin hex [on|off]"""
+  regwin hex [on|off]
+Add more registers to existing list
+  regwin add x17  s5 - s9 d12 - d13"""
 
     def __init__(self):
        super(RegWinCmd, self).__init__("regwin", gdb.COMMAND_DATA)
@@ -459,16 +461,21 @@ Toggle display of registers with hex format
         self.win = win
 
     def invoke(self, arguments, from_tty):
-        args = gdb.string_to_argv(arguments)
         reg_list = []
+        args = gdb.string_to_argv(arguments)
         prev = None
         expand = False
+        add = False
         if args[0] == "hex":
             if args[1] == "on":
                 self.win.set_hex(True)
             else:
                 self.win.set_hex(False)
             return
+
+        if args[0] == "add":
+            add = True
+            del args[0]
             
         for reg in args:
             if reg == "-":
@@ -490,7 +497,10 @@ Toggle display of registers with hex format
                 prev = reg
                 reg_list.append(reg)
 
-        self.win.set_list(reg_list)
+        if add:
+            self.win.add_list(reg_list)
+        else:
+            self.win.set_list(reg_list)
 
 regWinCmd = RegWinCmd()
 
@@ -514,6 +524,9 @@ class RegWindow(object):
 
     def set_list(self, list):
         self.reglist = list
+
+    def add_list(self, list):
+        self.reglist.extend(list)
 
     def set_hex(self, hex):
         self.hex = hex
