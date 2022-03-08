@@ -43,17 +43,11 @@ class FloatRegPrinter(object):
     def __init__(self, val):
         self.val = val
 
-# by retuning a float we can get the display of the register without the f = 
+# by retuning a float we can get the display of the register without the f = when using print $dn or $sn
+# tui reg float improved slightly but the hex part does not work properly
     def to_string(self):
-        return(float(self.val['f']))
+        return(self.val['f'])
 
-# Use children method else the tui reg float window won't display the values in hex and float
-# The view was better in armv8-a since Snn were float but now they are a builtin union
-    # def children(self):
-        # yield "f", float(self.val['f'])
-        # yield "s", self.val['s']
-        # yield "u", self.val['u']
- 
     def display_hint(self):
         return None
 
@@ -550,38 +544,42 @@ class RegWindow(object):
 
             if self.hex:
                 if reg.type.name == "long":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
+                    hexstr = reg.format_string(format="x")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {reg.format_string():<24}{RESET}')
                 elif name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<43}{RESET}')
                 elif name == "cpsr":
+                    hexstr = reg.format_string(format="x")
                     flags, cond = decode_cpsr(reg, False)
-                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{hexstr:<18} {flags:<24}{RESET}')
                 elif name == "fpcr":
+                    hexstr = reg.format_string(format="x")
                     st = decode_fpcr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}')
                 elif name == "fpsr":
+                    hexstr = reg.format_string(format="x")
                     st = decode_fpsr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {st:<24}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}')
                 elif reg.type.name == "__gdb_builtin_type_vnq":
-                    st = (hex(int(str(reg["u"]))))
+                    st = reg["u"].format_string(format="z")
                     self.tui.write(f'{GREEN}{name:<5}{hint}{st:<43}{RESET}') 
                 elif reg.type.name == "__gdb_builtin_type_vnb":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {int(reg["s"]):<24}{RESET}')
+                    st = reg["u"].format_string(format="x")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<18} {reg["s"].format_string():<24}{RESET}')
                 elif reg.type.name == "aarch64v":
-                    r1 = int(reg["d"]["u"][1])
-                    r2 = int(reg["d"]["u"][0])
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}         ') 
-                else:
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u"]):<#18x} {str(reg["f"]):<24}{RESET}') 
+                    st = reg["q"]["u"][0].format_string(format="z")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<34}{RESET}         ') 
+                else: # s & d
+                    st = reg["u"].format_string(format="x")
+                    f = reg["f"].format_string()
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<18} {f:<24}{RESET}') 
                 width = width - 48
                 if width < 48:
                     self.tui.write(NL)
                     width = self.tui.width
             else:
-                if reg.type.name == "long":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<24}{RESET}')
-                elif name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<24}{RESET}')
+                if reg.type.name == "long" or name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<24}{RESET}')
                 elif name == "cpsr":
                     flags, cond = decode_cpsr(reg, False)
                     self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}')
@@ -592,18 +590,18 @@ class RegWindow(object):
                     st = decode_fpsr(reg)
                     self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
                 elif reg.type.name == "__gdb_builtin_type_vnq":
-                    st = (hex(int(str(reg["u"]))))
+                    st = reg["u"].format_string(format="z")
                     self.tui.write(f'{GREEN}{name:<5}{hint}{st:<53}{RESET}') 
                     width = width - 29
                 elif reg.type.name == "__gdb_builtin_type_vnb":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["s"]):<24}{RESET}') 
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg["s"].format_string():<24}{RESET}') 
                 elif reg.type.name == "aarch64v":
-                    r1 = int(reg["d"]["u"][1])
-                    r2 = int(reg["d"]["u"][0])
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}                   ') 
+                    st = reg["q"]["u"][0].format_string(format="z")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<53}{RESET}') 
                     width = width - 29
-                else:
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg["f"]):<24}{RESET}') 
+                else:  # d or s
+                    f = reg["f"].format_string()
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{f:<24}{RESET}') 
                 width = width - 29
                 if width < 29:
                     self.tui.write(NL)
