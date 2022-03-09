@@ -197,7 +197,7 @@ def DumpFloatRegs(start, length):
     for i in range(start,start + length):
         name = reg_dict[i]
         reg = frame.read_register(name)
-        print(f'{GREEN}{name:<5}{RESET}{int(reg["u"]):<#18x}  {str(reg["f"])}') 
+        print(f'{GREEN}{name:<5}{RESET}{reg["u"].format_string(format="z"):18}  {reg["f"]}') 
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
@@ -266,7 +266,7 @@ default: info general 0 31"""
        for i in range(start,start + length):
            name = reg_dict[i]
            reg = frame.read_register(name)
-           print(f'{GREEN}{name:<5}{RESET}{int(reg):<#18x}  {str(reg)}') 
+           print(f'{GREEN}{name:<5}{RESET}{reg.format_string(format="x"):<18}  {reg}') 
 
 InfoGeneral()
 
