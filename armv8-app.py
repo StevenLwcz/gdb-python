@@ -40,7 +40,7 @@ class FloatRegPrinter(object):
         self.val = val
 
     def to_string(self):
-        return "%f" %self.val['f64']
+        return "%f" % self.val['f64']
 
     # def children(self):
     #     pass
@@ -171,19 +171,24 @@ def ParseInfoArgs(abi, arguments):
             return (-1, 0)
 
     return (start, length)
+
+# used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
+type_ptr_double = gdb.Value(0.0).type.pointer()
+
 def DumpSingleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
         name = reg_dict[i]
         reg = frame.read_register(name)
-        print(name + "\t" +  str(reg) + "\t" + float(reg).hex())
+        h = reg.cast(type_ptr_double).format_string(format="z")
+        print(f'{name}\t{h}\t{reg}')
 
 def DumpDoubleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
         name = reg_dict[i]
         reg = frame.read_register(name)
-        print(name + "\t" +  str(reg['f64']) + "\t" + hex(reg['u64']))
+        print(f'{name}\t{reg["u64"].format_string(format="z")}\t{reg["f64"]}')
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
@@ -490,35 +495,34 @@ class RegWindow(object):
 
             if self.hex:
                 if reg.type.name == "uint32_t" or name == "lr":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {int(reg):<24}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string(format="x"):<18} {reg.format_string():<24}{RESET}')
                 elif name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<43}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<43}{RESET}')
                 elif name == "cpsr":
                     flags, cond = decode_cpsr(reg, False)
-                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<18} {cond:<24}{RESET}')
+                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{reg.format_string(format="x"):<18} {flags:<24}{RESET}')
                 elif name == "fpscr":
                     flags, st = decode_fpscr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#18x} {flags:<24}{RESET}')
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string(format="x"):<18} {flags:<24}{RESET}')
                 elif reg.type.name == "neon_q":
-                    r1 = int(reg["u64"][1])
-                    r2 = int(reg["u64"][0])
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}         ') 
+                    r1 = reg["u64"][1].format_string(format="z")
+                    r2 = reg["u64"][0].format_string(format="z")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<18} {r2:<18}{RESET}         ') 
                 elif reg.type.name == "float": # s
-                    r1 = float(reg).hex()
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<18} {float(reg):<24}{RESET}') 
+                    # get the raw value of the float by casting it to a pointer (double *) and then printing the pointer in hex
+                    r1 = reg.cast(type_ptr_double).format_string(format="z")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<18} {reg.format_string():<24}{RESET}') 
                 else: # d
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg["u64"]):<#18x} {str(reg["f64"]):<24}{RESET}') 
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg["u64"].format_string(format="z"):<18} {reg["f64"].format_string():<24}{RESET}') 
                 width = width - 48
                 if width < 48:
                     self.tui.write(NL)
                     width = self.tui.width
             else:
-                if reg.type.name == "uint32_t":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<24}{RESET}')
-                elif name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{str(reg):<24}{RESET}')
+                if reg.type.name == "uint32_t" or name == "pc" or name == "sp":
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<24}{RESET}')
                 elif name == "lr":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{int(reg):<#24x}{RESET}') 
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string(format="x"):<24}{RESET}') 
                 elif name == "cpsr":
                     flags, cond = decode_cpsr(reg, False)
                     self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}')
@@ -526,14 +530,14 @@ class RegWindow(object):
                     flags, st = decode_fpscr(reg)
                     self.tui.write(f'{GREEN}{name:<5}{hint}{flags + st:<24}{RESET}')
                 elif reg.type.name == "neon_q":
-                    r1 = int(reg["u64"][1])
-                    r2 = int(reg["u64"][0])
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<#018x}{r2:<016x}{RESET}         ') 
+                    r1 = reg["u64"][1].format_string(format="z")
+                    r2 = reg["u64"][0].format_string(format="z")
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{r1:<18} {r2:<18}{RESET}         ') 
                     width = width - 29
                 elif reg.type.name == "float": # s
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{float(reg):<24}{RESET}') 
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<24}{RESET}') 
                 else: # d
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{float(reg["f64"]):<24}{RESET}') 
+                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg["f64"].format_string():<24}{RESET}') 
                 width = width - 29
                 if width < 29:
                     self.tui.write(NL)
