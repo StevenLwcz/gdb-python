@@ -181,14 +181,14 @@ def DumpSingleFloatRegs(start, length):
         name = reg_dict[i]
         reg = frame.read_register(name)
         h = reg.cast(type_ptr_double).format_string(format="z")
-        print(f'{name}\t{h}\t{reg}')
+        print(f'{GREEN}{name}{RESET}\t{h}\t{reg}')
 
 def DumpDoubleFloatRegs(start, length):
     frame = gdb.selected_frame()
     for i in range(start,start + length):
         name = reg_dict[i]
         reg = frame.read_register(name)
-        print(f'{name}\t{reg["u64"].format_string(format="z")}\t{reg["f64"]}')
+        print(f'{GREEN}{name}{RESET}\t{reg["u64"].format_string(format="z")}\t{reg["f64"]}')
 
 class InfoSingle(gdb.Command):
    """List the single precision floating point registers and values
@@ -259,7 +259,7 @@ default: info general 0 15"""
        for i in range(start,start + length):
            name = reg_dict[i]
            reg = frame.read_register(name)
-           print(name + "\t" +  str(reg) + "\t" + hex(reg))
+           print(f'{GREEN}{name}{RESET}\t{reg.format_string(format="x")}\t{reg}')
 
 InfoGeneral()
 
