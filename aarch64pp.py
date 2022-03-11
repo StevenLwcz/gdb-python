@@ -500,7 +500,7 @@ regWinCmd = RegWinCmd()
 
 def RegWinFactory(tui):
     win = RegWindow(tui)
-    gdb.events.before_prompt.connect(win.render)
+    gdb.events.before_prompt.connect(win.create_reg)
     regWinCmd.set_win(win)
     return win
 
@@ -515,6 +515,8 @@ class RegWindow(object):
         self.reglist = RegWindow.reglist_save
         self.prev = {}
         self.hex = False
+        self.start = 0
+        self.list = []
 
     def set_list(self, list):
         self.reglist = list
@@ -527,12 +529,35 @@ class RegWindow(object):
 
     def close(self):
         RegWindow.reglist_save = self.reglist
-        gdb.events.before_prompt.disconnect(self.render)
+        gdb.events.before_prompt.disconnect(self.create_reg)
 
     def render(self):
+        if not self.tui.is_valid():
+            return
+
         self.tui.erase()
-        frame = gdb.selected_frame()
+
+        for l in self.list[self.start:]:
+            self.tui.write(l)
+
+    def create_reg(self):
+        self.list = []
+
+        if not self.tui.is_valid():
+            return
+        
+        try:
+            frame = gdb.selected_frame()
+        except gdb.error:
+            self.start = 0
+            self.title = "No Frame"
+            self.list.append("No frame currently selected" + NL)
+            self.render()
+            return
+        
         width = self.tui.width
+        line = ""
+
         for name in self.reglist:
             reg = frame.read_register(name)
             if name in self.prev and self.prev[name] != reg:
@@ -545,75 +570,84 @@ class RegWindow(object):
             if self.hex:
                 if reg.type.name == "long":
                     hexstr = reg.format_string(format="x")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {reg.format_string():<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{hexstr:<18} {reg.format_string():<24}{RESET}'
                 elif name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<43}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{reg.format_string():<43}{RESET}'
                 elif name == "cpsr":
                     hexstr = reg.format_string(format="x")
                     flags, cond = decode_cpsr(reg, False)
-                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{hexstr:<18} {flags:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{hexstr:<18} {flags:<24}{RESET}'
                 elif name == "fpcr":
                     hexstr = reg.format_string(format="x")
                     st = decode_fpcr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}'
                 elif name == "fpsr":
                     hexstr = reg.format_string(format="x")
                     st = decode_fpsr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{hexstr:<18} {st:<24}{RESET}'
                 elif reg.type.name == "__gdb_builtin_type_vnq":
                     st = reg["u"].format_string(format="z")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<43}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{st:<43}{RESET}'
                 elif reg.type.name == "__gdb_builtin_type_vnb":
                     st = reg["u"].format_string(format="x")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<18} {reg["s"].format_string():<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{st:<18} {reg["s"].format_string():<24}{RESET}'
                 elif reg.type.name == "aarch64v":
                     st = reg["q"]["u"][0].format_string(format="z")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<34}{RESET}         ') 
+                    line += f'{GREEN}{name:<5}{hint}{st:<34}{RESET}         '
                 else: # s & d
                     st = reg["u"].format_string(format="x")
                     f = reg["f"].format_string()
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<18} {f:<24}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{st:<18} {f:<24}{RESET}'
                 width = width - 48
                 if width < 48:
-                    self.tui.write(NL)
+                    line += (NL)
                     width = self.tui.width
             else:
                 if reg.type.name == "long" or name == "pc" or name == "sp":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg.format_string():<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{reg.format_string():<24}{RESET}'
                 elif name == "cpsr":
                     flags, cond = decode_cpsr(reg, False)
-                    self.tui.write(GREEN + f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{flags:<24}{RESET}'
                 elif name == "fpcr":
                     st = decode_fpcr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{st:<24}{RESET}'
                 elif name == "fpsr":
                     st = decode_fpsr(reg)
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<24}{RESET}')
+                    line += f'{GREEN}{name:<5}{hint}{st:<24}{RESET}'
                 elif reg.type.name == "__gdb_builtin_type_vnq":
                     st = reg["u"].format_string(format="z")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<53}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{st:<53}{RESET}'
                     width = width - 29
                 elif reg.type.name == "__gdb_builtin_type_vnb":
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{reg["s"].format_string():<24}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{reg["s"].format_string():<24}{RESET}'
                 elif reg.type.name == "aarch64v":
                     st = reg["q"]["u"][0].format_string(format="z")
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{st:<53}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{st:<53}{RESET}'
                     width = width - 29
                 else:  # d or s
                     f = reg["f"].format_string()
-                    self.tui.write(f'{GREEN}{name:<5}{hint}{f:<24}{RESET}') 
+                    line += f'{GREEN}{name:<5}{hint}{f:<24}{RESET}'
                 width = width - 29
                 if width < 29:
-                    self.tui.write(NL)
+                    line += (NL)
+                    self.list.append(line)
+                    line = ""
                     width = self.tui.width
+
+        self.render()
 
     def hscroll(self, num):
         pass
 
     def vscroll(self, num):
-        pass
+        self.start += num
+        if self.start < 0:
+            self.start = 0
+        else:
+            length = len(self.list) - 1
+            if self.start > length:
+                self.start = length
 
-    def click(self, x, y, button):
-        pass
- 
+        self.render()
+
 gdb.register_window_type("arm64", RegWinFactory)
