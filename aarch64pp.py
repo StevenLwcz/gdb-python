@@ -600,7 +600,9 @@ class RegWindow(object):
                     line += f'{GREEN}{name:<5}{hint}{st:<18} {f:<24}{RESET}'
                 width = width - 48
                 if width < 48:
-                    line += (NL)
+                    line += NL
+                    self.list.append(line)
+                    line = ""
                     width = self.tui.width
             else:
                 if reg.type.name == "long" or name == "pc" or name == "sp":
@@ -629,10 +631,14 @@ class RegWindow(object):
                     line += f'{GREEN}{name:<5}{hint}{f:<24}{RESET}'
                 width = width - 29
                 if width < 29:
-                    line += (NL)
+                    line += NL
                     self.list.append(line)
                     line = ""
                     width = self.tui.width
+
+        if line != "":
+            line += NL
+            self.list.append(line)
 
         self.render()
 
