@@ -560,10 +560,7 @@ class RegWindow(object):
 
         for name in self.reglist:
             reg = frame.read_register(name)
-            if name in self.prev and self.prev[name] != reg:
-                hint = BLUE
-            else:
-                hint = WHITE
+            hint = BLUE if name in self.prev and self.prev[name] != reg else WHITE
 
             self.prev[name] = reg
 
@@ -645,15 +642,13 @@ class RegWindow(object):
     def hscroll(self, num):
         pass
 
-    def vscroll(self, num):
-        self.start += num
-        if self.start < 0:
-            self.start = 0
-        else:
-            length = len(self.list) - 1
-            if self.start > length:
-                self.start = length
+    def click(self, x, y, button):
+        pass
 
-        self.render()
+    def vscroll(self, num):
+        if num > 0 and num + self.start < len(self.list) or \
+           num < 0 and num + self.start > 0:
+            self.start += num
+            self.render()
 
 gdb.register_window_type("arm64", RegWinFactory)
