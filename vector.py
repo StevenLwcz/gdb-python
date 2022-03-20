@@ -30,6 +30,7 @@ class VectorCmd(gdb.Command):
                 ret = self.parse_arguments(arguments)
             except SyntaxError as err:
                 print(err)
+                return
 
             # self.window.set_vector(argv) 
         else:
@@ -55,7 +56,7 @@ class VectorCmd(gdb.Command):
                         i += 1
  
                     if int(line[start + 1:i + 1]) > 31:
-                        raise SyntaxError(f"vector: invalid register {line[start:i]} > 31")
+                        raise SyntaxError(f"vector: invalid register {line[start:i + 1]} > 31")
                   
                     reg = line[start:i + 1]
 
@@ -68,26 +69,27 @@ class VectorCmd(gdb.Command):
                                 if line[i + 1] == ".":
                                     i += 1
                                 else:
-                                    raise SyntaxError(f"vector: invalid register {line[start:]} . expected.")
+                                    raise SyntaxError(f"vector: invalid register {line[start:i + 1]} . expected.")
                             else:
-                                raise SyntaxError(f"vector: invalid register {line[start:]} width specifier expected.")
+                                raise SyntaxError(f"vector: invalid register {line[start:i + 2]} width specifier expected {width_spec}.")
                       
                         if line[i + 1] in type_spec: 
                             i += 1
                             type = line[i:i + 1]
                         else:
-                            raise SyntaxError(f"vector: invalid register {line[start:]} type specifier expected.")
+                            raise SyntaxError(f"vector: invalid register {line[start:i + 2]} type specifier expected {type_spec}.")
 
                     if line[i + 1] == ' ':
+                        i += 1
                         print(reg, width, type)
                     else:
-                        raise SyntaxError(f"vector: invalid register {line[start:]}")
+                        raise SyntaxError(f"vector: invalid register {line[start:i + 2]} space excepted.")
                 else:
-                    raise SyntaxError(f"vector: invalid register {line[start:]}")
+                    raise SyntaxError(f"vector: invalid register {line[start:i + 1]} number expected.")
             elif c == ' ':
                 i += 1
             else: 
-                raise SyntaxError(f"vector: invalid register {line[start:]}")
+                raise SyntaxError(f"vector: invalid register {line[start:]} register letter expected {reg_spec}.")
 
             i += 1
             
