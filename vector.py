@@ -65,27 +65,25 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
                     reg = line[start:i + 1]
 
                     if line[i + 1] == ".":
-                        i += 1
                         if c == 'v': 
+                            i += 1
                             if line[i + 1] in width_spec:
                                 i += 1
                                 width = line[i:i + 1]
-                                if line[i + 1] == ".":
-                                    i += 1
-                                else:
-                                    raise SyntaxError(f"vector: invalid register {line[start:i + 1]} . expected.")
                             else:
                                 raise SyntaxError(f"vector: invalid register {line[start:i + 2]} width specifier expected {width_spec}.")
                       
-                        if line[i + 1] in type_spec: 
+                        if line[i + 1] == ".":
                             i += 1
-                            type = line[i:i + 1]
-                            if (c == 'q' or c == 'b') and type == 'f':
-                                raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {c}.")
-                            if (c == 'v' and (width == 'q' or width == 'b')) and type == 'f':
-                                raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {width}.")
-                        else:
-                            raise SyntaxError(f"vector: invalid register {line[start:i + 2]} type specifier expected {type_spec}.")
+                            if line[i + 1] in type_spec: 
+                                i += 1
+                                type = line[i:i + 1]
+                                if (c == 'q' or c == 'b') and type == 'f':
+                                    raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {c}.")
+                                if (c == 'v' and (width == 'q' or width == 'b')) and type == 'f':
+                                    raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {width}.")
+                            else:
+                               raise SyntaxError(f"vector: invalid register {line[start:i + 2]} type specifier expected {type_spec}.")
 
                     if line[i + 1] == ' ':
                         i += 1
@@ -141,7 +139,10 @@ class VectorWindow(object):
             width = attr['width']
             type = attr['type']
             if width:
-                self.list.append(f'{GREEN}{name}  {WHITE}{val[width][type]}{RESET}{NL}')
+                if type:
+                    self.list.append(f'{GREEN}{name}  {WHITE}{val[width][type]}{RESET}{NL}')
+                else:
+                    self.list.append(f'{GREEN}{name}  {WHITE}{val[width]}{RESET}{NL}')
             elif type:
                 self.list.append(f'{GREEN}{name}  {WHITE}{val[type]}{RESET}{NL}')
             else:
