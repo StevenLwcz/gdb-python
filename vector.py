@@ -135,18 +135,20 @@ class VectorWindow(object):
 
         for name, attr in self.vector.items():
             val = frame.read_register(name)
+            hint = BLUE if attr['val'] != val  else WHITE
+            self.vector[name]['val'] = val
 
             width = attr['width']
             type = attr['type']
             if width:
                 if type:
-                    self.list.append(f'{GREEN}{name}  {WHITE}{val[width][type]}{RESET}{NL}')
+                    self.list.append(f'{GREEN}{name:<5}{hint}{val[width][type]}{RESET}{NL}')
                 else:
-                    self.list.append(f'{GREEN}{name}  {WHITE}{val[width]}{RESET}{NL}')
+                    self.list.append(f'{GREEN}{name:<5}{hint}{val[width]}{RESET}{NL}')
             elif type:
-                self.list.append(f'{GREEN}{name}  {WHITE}{val[type]}{RESET}{NL}')
+                self.list.append(f'{GREEN}{name:<5}{hint}{val[type]}{RESET}{NL}')
             else:
-                self.list.append(f'{GREEN}{name}  {WHITE}{val}{RESET}{NL}')
+                self.list.append(f'{GREEN}{name:<5}{hint}{val}{RESET}{NL}')
 
         self.render()
 
