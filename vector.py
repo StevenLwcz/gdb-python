@@ -10,13 +10,15 @@ width_spec = ['d', 's', 'b', 'q', 'h']
 type_spec = ['f', 's', 'u']
 
 class VectorCmd(gdb.Command):
-    """Add vector /OPT registers to the TUI Window vector.
-Register format: {reg}[.[width][.[type]]] 
+    """Add vector registers to the TUI Window vector.
+vector /OPT vector-register-list
+Adds register to the vector window. If a register exists it gets updated with any new specifiers.
+/OPT: x = print registers values in hex.
+Register format: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
 type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
-vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8
-/OPT: x = print registers in hex"""
+vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
 
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
@@ -188,7 +190,7 @@ class VectorWindow(object):
 
     def close(self):
         gdb.events.before_prompt.disconnect(self.create_vector)
-        VectorWindow.save_watch = self.watch
+        VectorWindow.save_vector = self.vector
 
     def render(self):
         if not self.tui.is_valid():
