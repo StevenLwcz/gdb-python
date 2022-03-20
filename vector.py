@@ -10,12 +10,13 @@ width_spec = ['d', 's', 'b', 'q', 'h']
 type_spec = ['f', 's', 'u']
 
 class VectorCmd(gdb.Command):
-    """Add vector registers to the TUI Window vector.
+    """Add vector /OPT registers to the TUI Window vector.
 Register format: {reg}[.[width][.[type]]] 
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
 type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
-vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
+vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8
+/OPT: x = print registers in hex"""
 
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
@@ -32,7 +33,12 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
 
             arguments += " "
             try:
-                ret = self.parse_arguments(arguments)
+                hex = False
+                offset = 0
+                if arguments[0:1] == "/":
+                    hex, offset = self.parse_arguments(arguments)
+
+                self.parse_registers(arguments[offset:], hex)
             except SyntaxError as err:
                 print(err)
                 return
@@ -41,8 +47,21 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
             print("vector: Tui Window not active yet")
             return
 
-    # to do del, clear
     def parse_arguments(self, line):
+       hex = False
+       i = 1
+       if line[i] == "x":
+           hex = True
+           i += 1
+       else:
+           raise SyntaxError(f'vector /x vector-register-list: Invalid option {line[i:i + 1]}')
+
+       while line[i] == " ":
+           i += 1
+
+       return hex, i
+
+    def parse_registers(self, line, hex):
         i = 0
         l = len(line) - 1
         while i < l:
@@ -87,7 +106,7 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
 
                     if line[i + 1] == ' ':
                         i += 1
-                        self.window.add_vector(reg, width, type)
+                        self.window.add_vector(reg, width, type, hex)
                     else:
                         raise SyntaxError(f"vector: invalid register {line[start:i + 2]} space excepted.")
                 else:
@@ -119,8 +138,8 @@ class VectorWindow(object):
         self.start = 0
         self.list = []
 
-    def add_vector(self, name, width, type):
-        self.vector[name] = {'width': width, 'type': type, 'val': None, 'hex': False}
+    def add_vector(self, name, width, type, hex):
+        self.vector[name] = {'width': width, 'type': type, 'val': None, 'hex': hex}
 
     def create_vector(self):
         self.list = []
@@ -140,15 +159,30 @@ class VectorWindow(object):
 
             width = attr['width']
             type = attr['type']
-            if width:
-                if type:
-                    self.list.append(f'{GREEN}{name:<5}{hint}{val[width][type]}{RESET}{NL}')
+
+            if attr['hex']:
+                type = 'u' if type == 'f' else type
+                if width:
+                    if type:
+                        st = val[width][type].format_string(format='z')
+                    else:
+                        st = val[width].format_string(format='z')
+                elif type:
+                    st = val[type].format_string(format='z')
                 else:
-                    self.list.append(f'{GREEN}{name:<5}{hint}{val[width]}{RESET}{NL}')
-            elif type:
-                self.list.append(f'{GREEN}{name:<5}{hint}{val[type]}{RESET}{NL}')
+                    st = val.format_string(format='z')
+
+                self.list.append(f'{GREEN}{name:<5}{hint}{st}{RESET}{NL}')
             else:
-                self.list.append(f'{GREEN}{name:<5}{hint}{val}{RESET}{NL}')
+                if width:
+                    if type:
+                        self.list.append(f'{GREEN}{name:<5}{hint}{val[width][type]}{RESET}{NL}')
+                    else:
+                        self.list.append(f'{GREEN}{name:<5}{hint}{val[width]}{RESET}{NL}')
+                elif type:
+                    self.list.append(f'{GREEN}{name:<5}{hint}{val[type]}{RESET}{NL}')
+                else:
+                    self.list.append(f'{GREEN}{name:<5}{hint}{val}{RESET}{NL}')
 
         self.render()
 
