@@ -10,7 +10,12 @@ width_spec = ['d', 's', 'b', 'q', 'h']
 type_spec = ['f', 's', 'u']
 
 class VectorCmd(gdb.Command):
-    """Add vector registers to the TUI Window vector."""
+    """Add vector registers to the TUI Window vector.
+Register format: {reg}[.[width][.[type]]] 
+reg:   v, b, h, s, d, q
+width: b, h, s, d, q     - Width only allowed with v.
+type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
+vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8"""
 
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
