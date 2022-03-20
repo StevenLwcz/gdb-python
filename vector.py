@@ -6,11 +6,11 @@ RESET = "\x1b[0m"
 NL = "\n\n"
 
 reg_spec = ['v', 'b', 'h', 's', 'd', 'q']
-width_spec = ['d', 's', 'b', 'q']
+width_spec = ['d', 's', 'b', 'q', 'h']
 type_spec = ['f', 's', 'u']
 
 class VectorCmd(gdb.Command):
-    """Add vector registers to the TUI Window watch"""
+    """Add vector registers to the TUI Window vector."""
 
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
@@ -32,12 +32,11 @@ class VectorCmd(gdb.Command):
                 print(err)
                 return
 
-            # self.window.set_vector(argv) 
         else:
             print("vector: Tui Window not active yet")
             return
 
-    # probably want to throw bad arguments and catch above in try
+    # to do del, clear
     def parse_arguments(self, line):
         i = 0
         l = len(line) - 1
@@ -85,7 +84,7 @@ class VectorCmd(gdb.Command):
 
                     if line[i + 1] == ' ':
                         i += 1
-                        print(reg, width, type)
+                        self.window.add_vector(reg, width, type)
                     else:
                         raise SyntaxError(f"vector: invalid register {line[start:i + 2]} space excepted.")
                 else:
@@ -117,9 +116,8 @@ class VectorWindow(object):
         self.start = 0
         self.list = []
 
-    def set_vector(self, list):
-        for name in list:
-            self.vector[name] = {'val': None, 'hex': False}
+    def add_vector(self, name, width, type):
+        self.vector[name] = {'width': width, 'type': type, 'val': None, 'hex': False}
 
     def create_vector(self):
         self.list = []
@@ -132,14 +130,17 @@ class VectorWindow(object):
             self.render()
             return
 
-        for name in self.vector:
+        for name, attr in self.vector.items():
             val = frame.read_register(name)
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["d"]["f"]}{RESET}{NL}')
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["d"]["s"]}{RESET}{NL}')
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["d"]["u"]}{RESET}{NL}')
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["s"]["u"]}{RESET}{NL}')
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["h"]["u"]}{RESET}{NL}')
-            self.list.append(f'{GREEN}{name}  {WHITE}{val["b"]["u"]}{RESET}{NL}')
+
+            width = attr['width']
+            type = attr['type']
+            if width:
+                self.list.append(f'{GREEN}{name}  {WHITE}{val[width][type]}{RESET}{NL}')
+            elif type:
+                self.list.append(f'{GREEN}{name}  {WHITE}{val[type]}{RESET}{NL}')
+            else:
+                self.list.append(f'{GREEN}{name}  {WHITE}{val}{RESET}{NL}')
 
         self.render()
 
