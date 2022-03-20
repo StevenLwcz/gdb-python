@@ -76,6 +76,10 @@ class VectorCmd(gdb.Command):
                         if line[i + 1] in type_spec: 
                             i += 1
                             type = line[i:i + 1]
+                            if (c == 'q' or c == 'b') and type == 'f':
+                                raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {c}.")
+                            if (c == 'v' and (width == 'q' or width == 'b')) and type == 'f':
+                                raise SyntaxError(f"vector: {line[start:i + 1]} type specifier 'f' not valid with {width}.")
                         else:
                             raise SyntaxError(f"vector: invalid register {line[start:i + 2]} type specifier expected {type_spec}.")
 
