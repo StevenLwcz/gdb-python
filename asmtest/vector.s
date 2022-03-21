@@ -29,8 +29,8 @@ _start:
     ldr x0, =num6
     ldr q7, [x0]
 
-    add v8.4s, v6.4s, v5.4s    // 32 bit
-    add v8.2s, v6.2s, v5.2s    // 32 bit
+    add v8.4s, v6.4s, v7.4s    // 32 bit
+    add v8.2s, v6.2s, v7.2s    // 32 bit
 
     ldr x0, =num7
     ldr q9, [x0]
@@ -39,27 +39,47 @@ _start:
 
     add v11.2d, v9.2d, v10.2d    // 64 bit
 
-    // integer single element moves
+    // single element moves - uses ins
+    // only replaces the element leaving the rest of the vector untouched
+
+    mov v2.b[1], v0.b[15]
+    mov v5.h[2], v3.h[7]
+    mov v8.s[3], v6.s[3]
+    mov v11.d[1], v9.d[0]
+
+    // single element moves - uses dup
+    // will set the rest of the vector register to zero
 
     mov b2, v0.b[0]
     mov h5, v3.h[3]
     mov s8, v6.s[2]
     mov d11, v9.d[0]
-    mov v2.b[0], v0.b[15]
 
-    // with general register
+    // general register moves
 
-    mov x0, 1234
-    mov v8.s[1], w0
-    mov w0, v6.s[1]
-    mov v11.d[1], x0
+    mov x0, 1234          // movz
+    mov v8.s[1], w0       // ins
+    mov v11.d[1], x0      // ins
+    umov w0, v6.s[1]      // has mov alias
+    umov x0, v9.d[1]      // has mov alias
+
+    // dup fills all vector elements with source (no mov alias)
+
+    dup v2.16b, v0.b[4]
+    dup v5.8h, v3.h[3]
+    dup v8.4s, v6.s[2]
+    dup v11.2d, v9.d[1]
+
+    mov x0, 5678            
+    dup v8.4s, w0
+    dup v11.2d, x0
 
     // vector register to vector register
 
     mov v2.16b, v0.16b
     mov v2.8b,  v1.8b
 
-    // from immediates
+    // from immediates - fills vector - no mov alias
 
     movi v0.16b, 100
     movi v3.8h,  127
@@ -95,10 +115,11 @@ _start:
 
     fadd v20.2d, v19.2d, v18.2d
 
-    // floating point single element moves
+    // single element moves - uses ins
 
+    mov v14.h[1], v16.h[6]
+    mov v17.s[1], v16.s[2]
     mov v20.d[1], v19.d[1]
-    mov v18.d[1], v20.d[0]
 
 end:
     mov     x0, #0      /* status */
@@ -144,14 +165,14 @@ num2:
     .byte 134
     .byte 135
 num3:
-    .hword 10000
-    .hword 20000
-    .hword 30000
-    .hword 40000
-    .hword 50000
-    .hword 60000
-    .hword 10000
-    .hword 20000
+    .hword 22000
+    .hword 33000
+    .hword 44000
+    .hword 55000
+    .hword 11000
+    .hword 2200
+    .hword 1100
+    .hword 3300
 num4:
     .hword 10000
     .hword 20000
@@ -159,24 +180,24 @@ num4:
     .hword 40000
     .hword 50000
     .hword 10000
-    .hword 05000
-    .hword 05000
+    .hword 5000
+    .hword 5000
 num5:
-    .word 100000
-    .word 200000
-    .word 300000
-    .word 300000
+    .word 100001
+    .word 200002
+    .word 300003
+    .word 400004
 num6:
-    .word 900000
-    .word 800000
-    .word 700000
-    .word 600000
+    .word 900090
+    .word 800080
+    .word 700070
+    .word 600060
 num7:
-    .quad 1000000
-    .quad 2000000
+    .quad 1000100
+    .quad 2000200
 num8:
-    .quad 3000000
-    .quad 4000000
+    .quad 3001000
+    .quad 4004000
 num9:
     .float16 23.45
     .float16 67.89
