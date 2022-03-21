@@ -12,9 +12,10 @@ type_spec = ['f', 's', 'u']
 class VectorCmd(gdb.Command):
     """Add vector registers to the TUI Window vector.
 vector /OPT vector-register-list
-Adds register to the vector window. If a register exists it gets updated with any new specifiers.
-/OPT: x = print registers values in hex.
+Adds vector registers to the vector window. If a register already exists it gets updated with any new specifiers.
+/OPT: x = display registers values in hex.
 /OPT: c = clears vector window
+/OPT: d = deletes registers from window: vector-register-list without.width or type spec.
 Register format: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
@@ -26,6 +27,7 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
        self.window = None
        self.hex = False
        self.clear = False
+       self.delete = False
 
     def set_window(self, window):
         self.window = window
@@ -39,12 +41,16 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
             try:
                 self.hex = False
                 self.clear = False
+                self.delete = False
                 offset = 0
                 if arguments[0:1] == "/":
                     offset = self.parse_arguments(arguments)
 
                 if self.clear:
                     self.window.clear_vector()
+                elif self.delete:
+                    argv = gdb.string_to_argv(arguments)
+                    self.window.delete_vector(argv[1:])
                 else:
                     self.parse_registers(arguments[offset:], self.hex)
 
@@ -60,6 +66,8 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
        i = 1
        if line[i] == "x":
            self.hex = True
+       elif line[i] == 'd':
+           self.delete = True
        elif line[i] == 'c':
            self.clear = True
            return
@@ -162,6 +170,13 @@ class VectorWindow(object):
 
     def clear_vector(self):
         self.vector.clear()
+
+    def delete_vector(self, argv):
+        for name in argv:
+            try:
+                del self.vector[name]
+            except:
+                print(f"vector /d: {name} not found.")
 
     def create_vector(self):
         self.list = []
