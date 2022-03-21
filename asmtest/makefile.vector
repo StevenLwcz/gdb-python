@@ -1,0 +1,10 @@
+all: vector
+
+%.o:%.s
+	as -g -o $@ $<
+
+vector: vector.o
+	ld -o $@ $<
+
+clean:
+	rm vector vector.o
