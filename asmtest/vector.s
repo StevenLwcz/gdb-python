@@ -117,9 +117,9 @@ _start:
 
     // single element moves - uses ins
 
-    mov v14.h[1], v16.h[6]
-    mov v17.s[1], v16.s[2]
-    mov v20.d[1], v19.d[1]
+    mov v14.h[0], v16.h[6]
+    mov v17.s[0], v16.s[2]
+    mov v20.d[0], v20.d[1]
 
 end:
     mov     x0, #0      /* status */
