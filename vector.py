@@ -14,8 +14,8 @@ class VectorCmd(gdb.Command):
 vector /OPT vector-register-list
 Adds vector registers to the vector window. If a register already exists it gets updated with any new specifiers.
 /OPT: x = display registers values in hex.
-/OPT: c = clears vector window
-/OPT: d = deletes registers from window: vector-register-list without.width or type spec.
+      c = clears vector window
+      d = deletes registers from window: vector-register-list without.width or type spec.
 Register format: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
@@ -200,26 +200,16 @@ class VectorWindow(object):
             if attr['hex']:
                 type = 'u' if type == 'f' else type
                 if width:
-                    if type:
-                        st = val[width][type].format_string(format='z')
-                    else:
-                        st = val[width].format_string(format='z')
-                elif type:
-                    st = val[type].format_string(format='z')
+                    st = val[width][type].format_string(format='z', repeat_threshold=0) if type else val[width].format_string(format='z')
                 else:
-                    st = val.format_string(format='z')
-
-                self.list.append(f'{GREEN}{name:<5}{hint}{st}{RESET}{NL}')
+                    st = val[type].format_string(format='z') if type else val.format_string(format='z')
             else:
                 if width:
-                    if type:
-                        self.list.append(f'{GREEN}{name:<5}{hint}{val[width][type]}{RESET}{NL}')
-                    else:
-                        self.list.append(f'{GREEN}{name:<5}{hint}{val[width]}{RESET}{NL}')
-                elif type:
-                    self.list.append(f'{GREEN}{name:<5}{hint}{val[type]}{RESET}{NL}')
+                    st = val[width][type].format_string(repeat_threshold=0) if type else val[width]
                 else:
-                    self.list.append(f'{GREEN}{name:<5}{hint}{val}{RESET}{NL}')
+                    st = val[type] if type else val
+
+            self.list.append(f'{GREEN}{name:<5}{hint}{st}{RESET}{NL}')
 
         self.render()
 
