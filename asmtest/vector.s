@@ -5,6 +5,9 @@
 .globl _start
 
 _start:
+
+    // integer vector
+
     ldr x0, =num1
     ldr q0, [x0]
     ldr x0, =num2
@@ -36,17 +39,44 @@ _start:
 
     add v11.2d, v9.2d, v10.2d    // 64 bit
 
-    mov b2, v0.b[2]
-    mov h5, v3.h[4]
-    mov s8, v6.s[3]
+    // integer single element moves
+
+    mov b2, v0.b[0]
+    mov h5, v3.h[3]
+    mov s8, v6.s[2]
     mov d11, v9.d[0]
-
     mov v2.b[0], v0.b[15]
-    mov v8.s[2], w0
-    mov v11.d[1], x10
 
-    mov v2.16b, v1.16b
-    mov v2.8b,  v0.8b
+    // with general register
+
+    mov x0, 1234
+    mov v8.s[1], w0
+    mov w0, v6.s[1]
+    mov v11.d[1], x0
+
+    // vector register to vector register
+
+    mov v2.16b, v0.16b
+    mov v2.8b,  v1.8b
+
+    // from immediates
+
+    movi v0.16b, 100
+    movi v3.8h,  127
+    movi v6.4s,  255
+    movi v9.2d,  0
+
+    // floatng point vector
+
+    // from immediates
+
+    fmov v12.8h, 1.0
+    fmov v13.4h, 2.0
+    fmov v15.4s, 1.0
+    fmov v16.2s, 2.0
+    fmov v18.2d, 1.0
+
+    // from memory
 
     ldr x0, =num9 
     ld1 {v12.8h, v13.8h}, [x0]
@@ -65,7 +95,10 @@ _start:
 
     fadd v20.2d, v19.2d, v18.2d
 
+    // floating point single element moves
+
     mov v20.d[1], v19.d[1]
+    mov v18.d[1], v20.d[0]
 
 end:
     mov     x0, #0      /* status */
