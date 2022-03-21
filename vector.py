@@ -14,6 +14,7 @@ class VectorCmd(gdb.Command):
 vector /OPT vector-register-list
 Adds register to the vector window. If a register exists it gets updated with any new specifiers.
 /OPT: x = print registers values in hex.
+/OPT: c = clears vector window
 Register format: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
@@ -23,6 +24,8 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
        self.window = None
+       self.hex = False
+       self.clear = False
 
     def set_window(self, window):
         self.window = window
@@ -30,17 +33,21 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
     def invoke(self, arguments, from_tty):
         if self.window:
             if len(arguments) == 0:
-                print("vector vector-register-list")
+                print("vector /OPT vector-register-list")
                 return
 
-            arguments += " "
             try:
-                hex = False
+                self.hex = False
+                self.clear = False
                 offset = 0
                 if arguments[0:1] == "/":
-                    hex, offset = self.parse_arguments(arguments)
+                    offset = self.parse_arguments(arguments)
 
-                self.parse_registers(arguments[offset:], hex)
+                if self.clear:
+                    self.window.clear_vector()
+                else:
+                    self.parse_registers(arguments[offset:], self.hex)
+
             except SyntaxError as err:
                 print(err)
                 return
@@ -50,22 +57,32 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
             return
 
     def parse_arguments(self, line):
-       hex = False
        i = 1
        if line[i] == "x":
-           hex = True
-           i += 1
+           self.hex = True
+       elif line[i] == 'c':
+           self.clear = True
+           return
        else:
-           raise SyntaxError(f'vector /x vector-register-list: Invalid option {line[i:i + 1]}')
+           raise SyntaxError(f'vector /OPT vector-register-list: Invalid option: {line[i:i + 1]}')
 
-       while line[i] == " ":
-           i += 1
+       # check there are registers and move ahead to 1st non space character
 
-       return hex, i
+       ln = len(line)
+       i += 1
+       while i < ln:
+           if line[i] == ' ': i += 1 
+           else: break
+        
+       if i == ln:
+           raise SyntaxError(f'vector /OPT vector-register-list')
+
+       return i
 
     def parse_registers(self, line, hex):
         i = 0
-        l = len(line) - 1
+        l = len(line)
+        line += " " # make peep ahead easier
         while i < l:
             start = i
             c = line[i]
@@ -142,6 +159,9 @@ class VectorWindow(object):
 
     def add_vector(self, name, width, type, hex):
         self.vector[name] = {'width': width, 'type': type, 'val': None, 'hex': hex}
+
+    def clear_vector(self):
+        self.vector.clear()
 
     def create_vector(self):
         self.list = []

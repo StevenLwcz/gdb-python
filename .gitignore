@@ -1,2 +1,3 @@
 __pycache__
 *.swp
+.gdb_history
