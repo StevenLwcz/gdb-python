@@ -1,3 +1,5 @@
+from platform import machine
+
 GREEN = "\x1b[38;5;47m"
 BLUE  = "\x1b[38;5;14m"
 WHITE = "\x1b[38;5;15m"
@@ -5,9 +7,15 @@ GREY  = "\x1b[38;5;246m"
 RESET = "\x1b[0m"
 NL = "\n\n"
 
-reg_spec = ['v', 'b', 'h', 's', 'd', 'q']
-width_spec = ['d', 's', 'b', 'q', 'h']
-type_spec = ['f', 's', 'u']
+if machine() == "aarch64":
+    reg_spec = ['v', 'b', 'h', 's', 'd', 'q']
+    width_spec = ['d', 's', 'b', 'q', 'h']
+    type_spec = ['f', 's', 'u']
+else:
+    reg_spec = ['d', 'q']
+    type_spec = ['f', 'u']
+    width_spec_u = [8, 16, 32, 64]
+    width_spec_f = [32, 64]
 
 class VectorCmd(gdb.Command):
     """Add vector registers to the TUI Window vector.
@@ -16,11 +24,14 @@ Adds vector registers to the vector window. If a register already exists it gets
 /OPT: x = display registers values in hex.
       c = clears vector window
       d = deletes registers from window: vector-register-list without.width or type spec.
-Register format: {reg}[.width][.type]
+Register format AArch64: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
 type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
-vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
+vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h
+Register format Armv8-a: {reg}[.type]
+reg:   d, q
+type:  u8, u16, u32, u64, f32, f64"""
 
     def __init__(self):
        super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
@@ -52,7 +63,10 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
                     argv = gdb.string_to_argv(arguments)
                     self.window.delete_vector(argv[1:])
                 else:
-                    self.parse_registers(arguments[offset:], self.hex)
+                    if machine() == "aarch64":
+                        self.parse_registers(arguments[offset:], self.hex)
+                    else:
+                        self.parse_registers_32(arguments[offset:], self.hex)
 
             except SyntaxError as err:
                 print(err)
@@ -145,6 +159,71 @@ vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
 
             i += 1
             
+    def parse_registers_32(self, line, hex):
+        i = 0
+        l = len(line)
+        line += " " # make peep ahead easier
+        width = None
+        while i < l:
+            start = i
+            c = line[i]
+ 
+            if c in reg_spec:
+                reg = None
+                type  = None
+
+                if line[i + 1].isdigit():
+                    i += 1
+                    while line[i + 1].isdigit():
+                        i += 1
+ 
+                    num = int(line[start + 1:i + 1])
+                    if c == 'q' and num > 31: 
+                        raise SyntaxError(f"vector: invalid register {line[start:i + 1]} > 31")
+                    elif num > 15:
+                        raise SyntaxError(f"vector: invalid register {line[start:i + 1]} > 15")
+
+                    reg = line[start:i + 1]
+
+                    if line[i + 1] == ".":
+                        i += 1
+                        if line[i + 1] in type_spec: 
+                            i += 1
+                            c = line[i]
+                            start = i
+                            if line[i + 1].isdigit():
+                                i += 1
+                                while line[i + 1].isdigit():
+                                    i += 1
+
+                                num = int(line[start + 1:i + 1])
+                                if c == 'u': 
+                                    if num in width_spec_u:
+                                        type = line[start:i + 1]
+                                    else:
+                                        raise SyntaxError(f"vector: invalid width {line[start:i + 2]} {width_spec_u}.")
+                                elif num in width_spec_f:
+                                    type = line[start:i + 1]
+                                else:
+                                    raise SyntaxError(f"vector: invalid width {line[start:i + 2]} {width_spec_f}.")
+                            else:
+                                raise SyntaxError(f"vector: invalid register {line[start:i + 2]} number expected.")
+                        else:
+                            raise SyntaxError(f"vector: invalid register {line[start:i + 2]} type specifier expected {type_spec}.")
+
+                    if line[i + 1] == ' ':
+                        i += 1
+                        self.window.add_vector(reg, width, type, hex)
+                    else:
+                        raise SyntaxError(f"vector: invalid register {line[start:i + 2]} space excepted.")
+                else:
+                    raise SyntaxError(f"vector: invalid register {line[start:i + 1]} number expected.")
+            elif c == ' ':
+                i += 1
+            else: 
+                raise SyntaxError(f"vector: invalid register {line[start:]} register letter expected {reg_spec}.")
+
+            i += 1
 
 vectorCmd = VectorCmd()
 
