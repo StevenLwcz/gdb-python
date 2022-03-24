@@ -647,7 +647,7 @@ class RegWindow(object):
 
     def vscroll(self, num):
         if num > 0 and num + self.start < len(self.list) or \
-           num < 0 and num + self.start > 0:
+           num < 0 and num + self.start >= 0:
             self.start += num
             self.render()
 
