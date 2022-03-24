@@ -24,6 +24,8 @@ Adds vector registers to the vector window. If a register already exists it gets
 /OPT: x = display registers values in hex.
       c = clears vector window
       d = deletes registers from window: vector-register-list without.width or type spec.
+      o = output the vector window to a series of vector commands to the cmd window.
+          To record to a file: (gdb) set logging {on|off} [filename]
 Register format AArch64: {reg}[.width][.type]
 reg:   v, b, h, s, d, q
 width: b, h, s, d, q     - Width only allowed with v.
@@ -39,6 +41,7 @@ type:  u8, u16, u32, u64, f32, f64"""
        self.hex = False
        self.clear = False
        self.delete = False
+       self.dump = False
 
     def set_window(self, window):
         self.window = window
@@ -53,12 +56,15 @@ type:  u8, u16, u32, u64, f32, f64"""
                 self.hex = False
                 self.clear = False
                 self.delete = False
+                self.dump = False
                 offset = 0
                 if arguments[0:1] == "/":
                     offset = self.parse_arguments(arguments)
 
                 if self.clear:
                     self.window.clear_vector()
+                elif self.dump:
+                    self.window.dump_vector()
                 elif self.delete:
                     argv = gdb.string_to_argv(arguments)
                     self.window.delete_vector(argv[1:])
@@ -84,6 +90,9 @@ type:  u8, u16, u32, u64, f32, f64"""
            self.delete = True
        elif line[i] == 'c':
            self.clear = True
+           return
+       elif line[i] == 'o':
+           self.dump = True
            return
        else:
            raise SyntaxError(f'vector /OPT vector-register-list: Invalid option: {line[i:i + 1]}')
@@ -256,6 +265,17 @@ class VectorWindow(object):
                 del self.vector[name]
             except:
                 print(f"vector /d: {name} not found.")
+
+    def dump_vector(self):
+        for name, a in self.vector.items():
+            st = 'vector '
+            width = a['width']
+            type = a['type']
+            if a['hex']: st += '/x '
+            st += name
+            if width: st += f'.{width}'
+            if type: st += f'.{type}'
+            print(st)
 
     def create_vector(self):
         self.list = []
