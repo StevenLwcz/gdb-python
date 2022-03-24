@@ -108,7 +108,7 @@ type:  u8, u16, u32, u64, f32, f64"""
         while i < l:
             start = i
             c = line[i]
- 
+
             if c in reg_spec:
                 reg = None
                 width = None
@@ -153,7 +153,7 @@ type:  u8, u16, u32, u64, f32, f64"""
                 else:
                     raise SyntaxError(f"vector: invalid register {line[start:i + 1]} number expected.")
             elif c == ' ':
-                i += 1
+                pass
             else: 
                 raise SyntaxError(f"vector: invalid register {line[start:]} register letter expected {reg_spec}.")
 
@@ -219,7 +219,7 @@ type:  u8, u16, u32, u64, f32, f64"""
                 else:
                     raise SyntaxError(f"vector: invalid register {line[start:i + 1]} number expected.")
             elif c == ' ':
-                i += 1
+                pass
             else: 
                 raise SyntaxError(f"vector: invalid register {line[start:]} register letter expected {reg_spec}.")
 
