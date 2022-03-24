@@ -178,9 +178,9 @@ type:  u8, u16, u32, u64, f32, f64"""
                         i += 1
  
                     num = int(line[start + 1:i + 1])
-                    if c == 'q' and num > 31: 
+                    if c == 'd' and num > 31:
                         raise SyntaxError(f"vector: invalid register {line[start:i + 1]} > 31")
-                    elif num > 15:
+                    elif c == 'q' and num > 15:
                         raise SyntaxError(f"vector: invalid register {line[start:i + 1]} > 15")
 
                     reg = line[start:i + 1]
