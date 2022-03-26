@@ -95,7 +95,7 @@ class HSDReg(Register):
 class BReg(Register):
 
     def __str__(self):
-        return self.val['u'].format_string(format="z") if self.hex else  self.val['u'].format_string()
+        return self.val['u'].format_string(format="z") if self.hex else self.val['u'].format_string()
 
 class QReg(Register):
 
@@ -103,7 +103,7 @@ class QReg(Register):
         return self.colour + format(str(self), "<53")
 
     def __str__(self):
-        return self.val['u'].format_string(format="z") if self.hex else  self.val['u'].format_string()
+        return self.val['u'].format_string(format="z") if self.hex else self.val['u'].format_string()
 
     def is_vector(self):
         return True
@@ -136,21 +136,34 @@ class FPCRReg(Register):
 class FPSRReg(Register):
 
     def __str__(self):
-        return decode_fpsr(self.val)
+        if self.hex:
+            return self.val.format_string('z')
+        else:
+            flags, st = decode_fpsr(self.val)
+            return flags + st
 
 class CPSRReg(Register):
 
     def __str__(self):
         return decode_cpsr(self.val, False)[0]
 
+# used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
+type_ptr_double = gdb.Value(0.0).type.pointer()
+
 class SReg(Register):
-    pass
+
+    def __str__(self):
+        return self.val.cast(type_ptr_double).format_string(format="z") if self.hex else self.val.format_string()
 
 class DReg(Register):
-    pass
+
+    def __str__(self):
+        return self.val['u64'].format_string(format="z") if self.hex else  self.val['f64'].format_string()
 
 class Qav8Reg(Register):
-    pass
+
+    def __str__(self):
+        return self.val["u64"][1].format_string(format="z") + " " + self.val["u64"][0].format_string(format="z")
 
 class FPSCRReg(Register):
     pass
@@ -243,7 +256,30 @@ def decode_fpsr(reg):
     if (reg & D_FLAG) == D_FLAG: str += "DZC"
 
     return str
+ 
+def decode_fpscr(reg):
+     flags = ""
+     n = (reg & N_FLAG) == N_FLAG
+     z = (reg & Z_FLAG) == Z_FLAG
+     c = (reg & C_FLAG) == C_FLAG
+     v = (reg & V_FLAG) == V_FLAG
+     if n: flags +="N "
+     if z: flags +="Z "
+     if c: flags +="C "
+     if v: flags +="V"
 
+     if z: str = "EQ"
+     else: str = "NE"
+
+     mode = RM_MASK & reg
+     if mode == RN_FLAG: str += " RN"
+     elif mode == RP_FLAG: str += "RP"
+     elif mode == RM_FLAG: str += "RM"
+     else: str += "RZ"
+
+     if (reg & DZE_FLAG) == DZE_FLAG: str += " DZE"
+
+     return flags, str
 #--------------------------
 # Register command and Register Window
 
