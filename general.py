@@ -131,21 +131,20 @@ class SPReg(Register):
 class FPCRReg(Register):
 
     def __str__(self):
-        return decode_fpcr(self.val)
+        flags = decode_fpcr(self.val)
+        return self.val.format_string(format='z') + " " + flags if self.hex else flags
 
 class FPSRReg(Register):
 
     def __str__(self):
-        if self.hex:
-            return self.val.format_string('z')
-        else:
-            flags, st = decode_fpsr(self.val)
-            return flags + st
+        flags = decode_fpsr(self.val)
+        return self.val.format_string(format='z') + " " + flags if self.hex else flags
 
 class CPSRReg(Register):
 
     def __str__(self):
-        return decode_cpsr(self.val, False)[0]
+        flags = decode_cpsr(self.val, False)[0]
+        return self.val.format_string(format='z') + " " + flags  if self.hex else flags
 
 # used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
 type_ptr_double = gdb.Value(0.0).type.pointer()
@@ -166,7 +165,10 @@ class Qav8Reg(Register):
         return self.val["u64"][1].format_string(format="z") + " " + self.val["u64"][0].format_string(format="z")
 
 class FPSCRReg(Register):
-    pass
+
+    def __str__(self):
+        flags, st = decode_fpsr(self.val)
+        return self.val.format_string('z') + " " + flags if self.hex else flags + st
 
 if machine() == "aarch64":
     reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg}
