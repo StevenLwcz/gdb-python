@@ -69,7 +69,7 @@ class Register(object):
         return self.colour + format(str(self), format_spec)
          
     def __str__(self):
-        return self.val.format_string()  
+        return self.val.format_string(format='x') if self.hex else self.val.format_string()
 
     def value(self):
         val = Register.frame.read_register(self.name)
@@ -78,8 +78,8 @@ class Register(object):
         self.colour = BLUE if self.mod else WHITE
         return self.val
 
-    def hex(self):
-        return self.val.format_string(format='z')
+    def is_vector(self):
+        return False
 
 class XReg(Register):
     pass
@@ -87,17 +87,34 @@ class XReg(Register):
 class HSDReg(Register):
 
     def __str__(self):
-        return self.val['f'].format_string()
+        return self.val['u'].format_string(format="z") if self.hex else  self.val['f'].format_string()
 
-class BQReg(Register):
+class BReg(Register):
 
     def __str__(self):
-        return self.val['u'].format_string()
+        return self.val['u'].format_string(format="z") if self.hex else  self.val['u'].format_string()
+
+class QReg(Register):
+
+    def __format__(self, format_spec):
+        return self.colour + format(str(self), "<53")
+
+    def __str__(self):
+        return self.val['u'].format_string(format="z") if self.hex else  self.val['u'].format_string()
+
+    def is_vector(self):
+        return True
 
 class VReg(Register):
 
+    def __format__(self, format_spec):
+        return self.colour + format(str(self), "<53")
+
     def __str__(self):
-        return self.val['q']['u'][0].format_string()
+        return self.val['q']['u'][0].format_string(format="z") if self.hex else self.val['q']['u'][0].format_string()
+
+    def is_vector(self):
+        return True
 
 class PCReg(Register):
     pass
@@ -120,7 +137,7 @@ class CPSRReg(Register):
     def __str__(self):
         return decode_cpsr(self.val, False)[0]
 
-reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BQReg, 'q': BQReg, 'v': VReg}
+reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg}
 reg_special = {'pc': PCReg, 'sp': SPReg, 'cpsr': CPSRReg, 'fpsr': FPSRReg, 'fpcr': FPCRReg}
 
 #--------------------------
@@ -229,18 +246,14 @@ OPT: del delete register list
         prev = None
         expand = False
         delete = False
-        # if args[0] == "hex":
-            # if args[1] == "on":
-                # self.win.set_hex(True)
-            # else:
-                # self.win.set_hex(False)
-            # return
-
-        if args[0] == "clear":
+        hex = False
+        if args[0] == "hex":
+            hex = False if args[1] == "off" else True   # to do check argc 
+            del args[0]
+        elif args[0] == "clear":
             self.win.clear_registers()
             return
-            
-        if args[0] == "del":
+        elif args[0] == "del":
             delete = True
             del args[0]
             
@@ -266,6 +279,8 @@ OPT: del delete register list
 
         if delete:
             self.win.del_registers(reg_list)
+        elif hex:
+            self.win.hex_registers(reg_list, hex)
         else:
             self.win.add_registers(reg_list)
 
@@ -292,13 +307,17 @@ class RegisterWindow(object):
     def add_registers(self, list):
         for reg in list:
             self.regs[reg] = Register.Factory(reg)
+            
+    def add_registers(self, list):
+        for reg in list:
+            self.regs[reg] = Register.Factory(reg)
 
-    def del_registers(self, argv):
+    def hex_registers(self, argv, mode):
         for name in argv:
-            try:
-                del self.regs[name]
-            except:
-                print(f'register del {name} not found')
+            if not name in self.regs:
+                self.add_registers([name])
+
+            self.regs[name].hex = mode
 
     def clear_registers(self):
         self.regs.clear()
@@ -345,8 +364,8 @@ class RegisterWindow(object):
             val = reg.value()
             line += f'{GREEN}{name:<5}{reg:<24}{RESET}'
             
-            width -= 29
-            if width < 29:
+            width -= 53 if reg.is_vector() else 29
+            if width < 53 and reg.is_vector() or width < 29:
                 line += NL
                 self.tui_list.append(line)
                 line = ""
