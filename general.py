@@ -66,7 +66,7 @@ class Register(object):
             try:
                 return reg_class[name[0:1]](name)
             except:
-               raise "Not Found"
+                raise BasicException("Invalid Register")
 
     def __format__(self, format_spec):
         return self.colour + format(str(self), format_spec)
@@ -355,7 +355,10 @@ class RegisterWindow(object):
     def add_registers(self, list):
         for name in list:
             if not name in self.regs:
-                self.regs[name] = Register.Factory(name)
+                try:
+                    self.regs[name] = Register.Factory(name)
+                except:
+                    print(f'register: invalid register {name}.')
             
     def del_registers(self, list):
         for name in list:
