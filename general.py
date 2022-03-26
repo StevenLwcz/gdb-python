@@ -42,7 +42,7 @@ registers = {"x0": 0, "x1": 1, "x2": 2, "x3": 3, "x4": 4, "x5": 5, "x6": 6, "x7"
        "v25": 216, "v26": 217, "v27": 218, "v28": 219, "v29": 220, "v30": 221, "v31": 222,
        "r0": 223, "r1": 224, "r2": 225, "r3": 226, "r4": 227, "r5": 228, "r6": 229, "r7": 230, "r8": 231,
        "r9": 232, "r10": 233, "r11": 234, "r12": 235,
-       "lr": 236, "pc": 237, "sp": 238, "cpsr": 239, "fpsr": 240, "fpcr": 241}
+       "lr": 236, "pc": 237, "sp": 238, "cpsr": 239, "fpsr": 240, "fpcr": 241, "fpscr": 242}
 
 #--------------------------
 # class view of registers for formatting
@@ -165,8 +165,8 @@ class Qav8Reg(Register):
 class FPSCRReg(Register):
 
     def __str__(self):
-        flags, st = decode_fpsr(self.val)
-        return self.val.format_string('z') + " " + flags if self.hex else flags + st
+        flags, st = decode_fpscr(self.val)
+        return " " + self.val.format_string(format='z') + " " + flags if self.hex else " " + flags + st
 
 if machine() == "aarch64":
     reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg}

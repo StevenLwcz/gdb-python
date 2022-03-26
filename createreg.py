@@ -1,4 +1,4 @@
-print("reg = {", end='')
+print("registers = {", end='')
 first=True
 index = 0
 for r in ['x', 'b', 'h', 's', 'd', 'q', 'v', 'r']:
@@ -23,7 +23,7 @@ for r in ['x', 'b', 'h', 's', 'd', 'q', 'v', 'r']:
     print(",")
     first = True
 
-for r in ['lr', 'pc', 'sp', 'cpsr', 'fpsr', 'fpcr']:
+for r in ['lr', 'pc', 'sp', 'cpsr', 'fpsr', 'fpcr', 'fpscr']:
    if first:
        print(f'       "{r}": {index}', end='')
        first=False
