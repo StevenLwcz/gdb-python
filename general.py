@@ -55,18 +55,17 @@ class Register(object):
         self.name = name
         self.val = None
         self.hex = False
-        self.mod = False
         self.colour = WHITE
 
     @classmethod
     def Factory(self, name):
         try:
-            return reg_special[name](name)
-        except:
-            try:
+            if name[1:2].isdigit():
                 return reg_class[name[0:1]](name)
-            except:
-                raise BasicException("Invalid Register")
+            else:
+                return reg_special[name](name)
+        except:
+            raise BasicException("Invalid Register")
 
     def __format__(self, format_spec):
         return self.colour + format(str(self), format_spec)
@@ -76,9 +75,8 @@ class Register(object):
 
     def value(self):
         val = Register.frame.read_register(self.name)
-        self.mod = False if val == self.val else True
+        self.colour = BLUE if self.val != val else WHITE
         self.val = val
-        self.colour = BLUE if self.mod else WHITE
         return self.val
 
     def is_vector(self):
@@ -292,7 +290,7 @@ List of registers space separated. Ranges can be specified with -. For example:
 Special registers: pc, sp, cpsr, fpsr, fpcr
 register OPT register-list
 OPT: del delete register list
-     hex toggle hex display of register list
+     hex {on|off} register-list
    clear clear all registers from the window"""
 
     def __init__(self):
@@ -377,7 +375,6 @@ def RegisterFactory(tui):
     gdb.events.before_prompt.connect(win.create_register)
     regWinCmd.set_win(win)
     return win
-
 
 class RegisterWindow(object):
 
