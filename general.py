@@ -258,27 +258,52 @@ OPT: del delete register list
    clear clear all registers from the window"""
 
     def __init__(self):
-       super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
+        super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
+        self.win = None
 
     def set_win(self, win):
         self.win = win
 
     def invoke(self, arguments, from_tty):
+        if self.win == None:
+            print("register: Tui Window not active.")
+            return
+     
         reg_list = []
-        args = gdb.string_to_argv(arguments)
         prev = None
         expand = False
         delete = False
-        hex = False
-        if args[0] == "hex":
-            hex = False if args[1] == "off" else True   # to do check argc 
+        hex = None
+
+        args = gdb.string_to_argv(arguments)
+        argc = len(args)
+        if argc == 0:
+            print("register register-list")
+            return
+        elif args[0] == "hex":
+            if argc > 2:
+                if args[1] == 'on':
+                    hex = True
+                elif args[1] == 'off':
+                    hex = False
+                else:
+                    print("register hex [on|off] register-list")
+                    return
+            else:
+                print("register hex [on|off] register-list")
+                return
+            del args[0]
             del args[0]
         elif args[0] == "clear":
             self.win.clear_registers()
             return
         elif args[0] == "del":
-            delete = True
-            del args[0]
+            if argc > 1:
+                delete = True
+                del args[0]
+            else:
+                print("register del register-list")
+                return
             
         for reg in args:
             if reg == "-":
@@ -302,7 +327,7 @@ OPT: del delete register list
 
         if delete:
             self.win.del_registers(reg_list)
-        elif hex:
+        elif hex is not None:
             self.win.hex_registers(reg_list, hex)
         else:
             self.win.add_registers(reg_list)
@@ -328,15 +353,19 @@ class RegisterWindow(object):
         self.tui_list = []
 
     def add_registers(self, list):
-        for reg in list:
-            self.regs[reg] = Register.Factory(reg)
+        for name in list:
+            if not name in self.regs:
+                self.regs[name] = Register.Factory(name)
             
-    def add_registers(self, list):
-        for reg in list:
-            self.regs[reg] = Register.Factory(reg)
+    def del_registers(self, list):
+        for name in list:
+            try:
+                del self.regs[name]
+            except:
+               print(f'register del {name} not found')
 
-    def hex_registers(self, argv, mode):
-        for name in argv:
+    def hex_registers(self, args, mode):
+        for name in args:
             if not name in self.regs:
                 self.add_registers([name])
 
@@ -344,13 +373,6 @@ class RegisterWindow(object):
 
     def clear_registers(self):
         self.regs.clear()
-
-    def set_hex(self, list):
-        for reg in list:
-            if not reg in self.regs:
-                self.regs[reg] = Register.Factory(reg)
-
-            self.regs[reg].toggle_hex()
 
     def close(self):
         RegisterWindow.regs_save = self.regs
