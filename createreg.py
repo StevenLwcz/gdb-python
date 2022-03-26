@@ -1,9 +1,11 @@
 print("reg = {", end='')
 first=True
 index = 0
-for r in ['x', 'b', 'h', 's', 'd', 'q', 'v']:
+for r in ['x', 'b', 'h', 's', 'd', 'q', 'v', 'r']:
     for num in range(0,32):
         if r == 'x' and num == 31:
+            continue
+        if r == 'r' and num > 12:
             continue
 
         if first:
@@ -21,7 +23,7 @@ for r in ['x', 'b', 'h', 's', 'd', 'q', 'v']:
     print(",")
     first = True
 
-for r in ['pc', 'sp', 'cpsr', 'fpsr', 'fpcr']:
+for r in ['lr', 'pc', 'sp', 'cpsr', 'fpsr', 'fpcr']:
    if first:
        print(f'       "{r}": {index}', end='')
        first=False
