@@ -159,8 +159,14 @@ class DReg(Register):
 
 class Qav8Reg(Register):
 
+    def __format__(self, format_spec):
+        return self.colour + format(str(self), "<53")
+
     def __str__(self):
         return self.val["u64"][1].format_string(format="z") + " " + self.val["u64"][0].format_string(format="z")
+
+    def is_vector(self):
+        return True
 
 class FPSCRReg(Register):
 
