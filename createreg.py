@@ -66,3 +66,26 @@ for r in ['lr', 'pc', 'sp', 'cpsr', 'fpscr']:
 
 print("}")
 
+
+
+
+for r in ['r', 'x', 's', 'd']:
+    print(f'{r}_list = {{', end='')
+    first = True
+    for num in range(0,32):
+        if r == 'r' and num > 12:
+            continue
+        if r == 'x' and num == 31:
+            continue
+
+        if first:
+            print(f'"{r}{num}": {num}', end='')
+            first = False
+        else:
+            print(f', "{r}{num}": {num}', end='')
+
+        if num == 8 or num == 16 or num == 24:
+            print(",")
+            first = True
+
+    print("}")
