@@ -28,12 +28,33 @@ class InfoGSD(gdb.Command):
     def invoke(self, arguments, from_tty):
         frame = gdb.selected_frame()
         argv = gdb.string_to_argv(arguments)
+        
+        list = []
+        expand = False
+        prev = None
+
         for name in argv:
-            if name in self.reglist:
-                val = frame.read_register(name)
-                self.format_reg(name, val)
+            if name == "-":
+                expand = True
+                continue
+            elif not name in self.reglist:
+                print(f'info {self.cmd} {name} invalid register.')
+                return
+
+            if expand:
+                if prev == None:
+                    print(f'info {self.cmd} no start to range .')
+                start = self.reglist[prev]
+                finish = self.reglist[name]
+                list.extend([k for k, v in self.reglist.items() if v > start and v <= finish])
+                expand = False
             else:
-                print(f'info {self.cmd} {name} invalid register')
+               prev = name
+               list.append(name)
+
+        for name in list:
+            val = frame.read_register(name)
+            self.format_reg(name, val)
 
 #---- general ----- 
 
@@ -49,7 +70,7 @@ class InfoGeneral64(InfoGSD):
     def format_reg(self, name, val):
         print(name, val)
 
-class InfoGeneral32(InfoSingle):
+class InfoGeneral32(InfoGSD):
     """info general Armv8-a"""
 
     cmd = "general"
@@ -108,8 +129,8 @@ class InfoDouble32(InfoGSD):
         print(name, val['f64'])
 
 
-if machine == "aarch64":
-    InfoGeneral6464()
+if machine() == "aarch64":
+    InfoGeneral64()
     InfoSingle64()
     InfoDouble64()
 else:
