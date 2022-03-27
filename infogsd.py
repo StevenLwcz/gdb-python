@@ -37,26 +37,27 @@ class InfoGSD(gdb.Command):
         expand = False
         prev = None
 
-        for name in argv:
-            if name == "-":
-                expand = True
-                continue
-            elif not name in self.reglist:
-                print(f'info {self.cmd} {name} invalid register.')
-                return
-
-            if expand:
-                if prev == None:
-                    print(f'info {self.cmd} no start to range .')
-                start = self.reglist[prev]
-                finish = self.reglist[name]
-                list.extend([k for k, v in self.reglist.items() if v > start and v <= finish])
-                expand = False
-            else:
-               prev = name
-               list.append(name)
-        else:
+        if len(argv) == 0:
             list = self.reglist
+        else:
+            for name in argv:
+                if name == "-":
+                    expand = True
+                    continue
+                elif not name in self.reglist:
+                    print(f'info {self.cmd} {name} invalid register.')
+                    return
+
+                if expand:
+                    if prev == None:
+                        print(f'info {self.cmd} no start to range .')
+                    start = self.reglist[prev]
+                    finish = self.reglist[name]
+                    list.extend([k for k, v in self.reglist.items() if v > start and v <= finish])
+                    expand = False
+                else:
+                   prev = name
+                   list.append(name)
 
         frame = gdb.selected_frame()
         for name in list:
