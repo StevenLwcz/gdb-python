@@ -290,14 +290,15 @@ def decode_fpscr(reg):
 # Register command and Register Window
 
 class RegisterCmd(gdb.Command):
-    """Add registers to the custom TUI Window register
-List of registers space separated. Ranges can be specified with -. For example:
-  register x0 x10 - x15 s0 s4 - s6 d5 - d9
-Special registers: pc, sp, cpsr, fpsr, fpcr
+    """Add registers to the custom TUI Window register.
 register OPT register-list
-OPT: del delete register list
+Register-list space separated. Ranges can be specified with -. For example:
+  register x0 x10 - x15 s0 s4 - s6 d5 - d9*
+  register r0 r10 - r15 s0 s4 - s6 d5 - d9
+Special registers: lr, pc, sp, cpsr, fpsr*, fpcr*, fpscr. *AArch64
+OPT: del register-list
      hex {on|off} register-list
-   clear clear all registers from the window"""
+   clear - clear all registers from the window"""
 
     def __init__(self):
         super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
@@ -450,15 +451,16 @@ class RegisterWindow(object):
         line = ""
 
         for name, reg in self.regs.items():
-            val = reg.value()
-            line += f'{GREEN}{name:<5}{reg:<24}{RESET}'
-            
-            width -= 53 if reg.is_vector() else 29
-            if width < 53 and reg.is_vector() or width < 29:
+            reg.value()
+
+            if width < 53 and reg.is_vector() or width < 29 and not reg.is_vector():
                 line += NL
                 self.tui_list.append(line)
                 line = ""
                 width = self.tui.width
+
+            line += f'{GREEN}{name:<5}{reg:<24}{RESET}'
+            width -= 53 if reg.is_vector() else 29
 
         if line != "":
             line += NL
