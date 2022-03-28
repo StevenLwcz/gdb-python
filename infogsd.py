@@ -209,7 +209,7 @@ info vector /df v0 v2 - v4"""
 class InfoVector32(InfoGSD):
     """info vector /FMT [/x] vector-register-list (q0 - q15}
 /FMT: {u8, u16, u32, u64, f32, f64}
-/x    - display in hex
+/x  : display in hex
 Use - to specify a range of registers.
 info vector /u32 q0 q2 - q4"""
 
@@ -217,22 +217,24 @@ info vector /u32 q0 q2 - q4"""
     reglist = q_list
 
     def __init__(self):
-       super(InfoVector64, self).__init__("info vector", gdb.COMMAND_DATA)
+       super().__init__("info vector", gdb.COMMAND_DATA)
 
     def invoke(self, arguments, from_tty):
         self.hex = False 
         l = len(arguments)
         
-        if l > 3 and arguments[0:1] == "/":
+        if l > 2 and arguments[0:1] == "/":
             arguments += ' '
             i = arguments.index(' ')
-            fmt = arguments[0:i]
+            fmt = arguments[1:i]
 
             if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
                 self.width = fmt
-                if arguments[i + 1: i + 2] == '/x':
+                i += 1
+                if arguments[i:i + 2] == '/x':
                     self.hex = True
-                super().invoke(arguments[4:], from_tty)
+                    i += 3
+                super().invoke(arguments[i:], from_tty)
             else:
                 print(f'info vector /FMT u8, u16, u32, u64, f32, f64 expected: {fmt}')
         else:
@@ -241,7 +243,7 @@ info vector /u32 q0 q2 - q4"""
     def format_reg(self,  val):
         if self.width == 'f32': hex = 'u32'
         elif self.width == 'f64': hex = 'u64'
-        else: hex == self.width
+        else: hex = self.width
         return val[hex].format_string(format='z', repeat_threshold=0) if self.hex \
                else val[self.width].format_string(repeat_threshold=0)
 
