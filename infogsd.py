@@ -8,7 +8,7 @@ RESET = "\x1b[0m"
 # register lists
 
 r_list = {"r0": 0, "r1": 1, "r2": 2, "r3": 3, "r4": 4, "r5": 5, "r6": 6, "r7": 7, "r8": 8,
-          "r9": 9, "r10": 10, "r11": 11, "r12": 12}
+          "r9": 9, "r10": 10, "r11": 11, "r12": 12, 'sp': 13, 'lr': 14, 'pc': 15, 'cpsr': 16, 'fpscr': 17}
 
 x_list = {"x0": 0, "x1": 1, "x2": 2, "x3": 3, "x4": 4, "x5": 5, "x6": 6, "x7": 7, "x8": 8,
           "x9": 9, "x10": 10, "x11": 11, "x12": 12, "x13": 13, "x14": 14, "x15": 15, "x16": 16,
@@ -88,7 +88,7 @@ class InfoGeneral32(InfoGSD):
     reglist = r_list
 
     def __init__(self):
-       super(InfoGeneral32, self).__init__("info single", gdb.COMMAND_DATA)
+       super(InfoGeneral32, self).__init__("info general", gdb.COMMAND_DATA)
 
 #---- single ----- 
 
@@ -148,11 +148,13 @@ class InfoDouble32(InfoGSD):
     def __init__(self):
        super(InfoDouble32, self).__init__("info double", gdb.COMMAND_DATA)
 
-    def format_reg(self, name, val):
+    def format_reg(self, val):
         return val['f64'].format_string()
 
     def format_reg_hex(self, val):
         return val['u64'].format_string(format='x')
+
+#---- ----- 
 
 if machine() == "aarch64":
     InfoGeneral64()
