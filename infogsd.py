@@ -81,7 +81,7 @@ class InfoGSD(gdb.Command):
 #---- general ----- 
 
 class InfoGeneral64(InfoGSD):
-    """info general register-list (x0 - x30 sp lr pc cpsr fpsr fpcr
+    """info general [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
 Use - to specify a range of registers.
 info general x0 x4 - x9 pc cpsr"""
 
@@ -92,7 +92,7 @@ info general x0 x4 - x9 pc cpsr"""
        super().__init__("info general", gdb.COMMAND_DATA)
 
 class InfoGeneral32(InfoGSD):
-    """info general register-list (r0 - r12 sp lr pc cpsr fpscr
+    """info general [register-list] (r0 - r12 sp lr pc cpsr fpscr)
 Use - to specify a range of registers.
 info general r0 r4 - r9 pc cpsr"""
 
@@ -105,7 +105,7 @@ info general r0 r4 - r9 pc cpsr"""
 #---- single ----- 
 
 class InfoSingle64(InfoGSD):
-    """info single  register-list (s0 - s31)
+    """info single [register-list] (s0 - s31)
 Use - to specify a range of registers.
 info double s0 s4 - s9"""
 
@@ -124,7 +124,7 @@ info double s0 s4 - s9"""
 type_ptr_double = gdb.Value(0.0).type.pointer()
 
 class InfoSingle32(InfoGSD):
-    """info single  register-list (s0 - s31)
+    """info single [register-list] (s0 - s31)
 Use - to specify a range of registers.
 info double s0 s4 - s9"""
 
@@ -140,7 +140,7 @@ info double s0 s4 - s9"""
 #---- double ----- 
 
 class InfoDouble64(InfoGSD):
-    """info double register-list (d0 - d31)
+    """info double [register-list] (d0 - d31)
 Use - to specify a range of registers.
 info double d0 d4 - d9"""
 
@@ -157,7 +157,7 @@ info double d0 d4 - d9"""
         return val['u'].format_string(format='x')
 
 class InfoDouble32(InfoGSD):
-    """info double register-list (d0 - d31)
+    """info double [register-list] (d0 - d31)
 Use - to specify a range of registers.
 info double d0 d4 - d9"""
 
@@ -176,7 +176,7 @@ info double d0 d4 - d9"""
 #---- vector ----- 
 
 class InfoVector64(InfoGSD):
-    """info vector /FMT vector-register-list (v0 - v31}
+    """info vector /FMT [vector-register-list] (v0 - v31}
 /FMT: {b, h, s, d, q}{f, s, u}[x]
 width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
 type  - f: float, s: signed, u: unsigned
@@ -193,17 +193,16 @@ info vector /df v0 v2 - v4"""
     def invoke(self, arguments, from_tty):
         self.hex = False 
         l = len(arguments)
-        if l > 4 and arguments[0:1] == "/":
+        if l > 2 and arguments[0:1] == "/":
             if arguments[1:2] in ['b', 'h', 's', 'd', 'q']:
                 self.width = arguments[1:2]
                 if arguments[2:3] in ['f', 's', 'u']:
                     self.type = arguments[2:3]
-                    if arguments[3:4] in ['x', ' ']:
-                        if arguments[3:4] == ' ':
-                            self.hex = True
-                        super().invoke(arguments[4:], from_tty)
-                    else:
-                        print(f'info vector /FMT: x expected: {arguments[3:4]}')
+                    i = 4
+                    if arguments[3:4] == 'x':
+                        self.hex = True
+                        i += 1
+                    super().invoke(arguments[i:], from_tty)
                 else:
                     print(f'info vector /FMT: f,s,u expected: {arguments[2:3]}')
             else:
@@ -219,7 +218,7 @@ info vector /df v0 v2 - v4"""
         return ""
 
 class InfoVector32(InfoGSD):
-    """info vector /FMT [/x] vector-register-list (q0 - q15}
+    """info vector /FMT [/x] [vector-register-list] (q0 - q15}
 /FMT: {u8, u16, u32, u64, f32, f64}
 /x  : display in hex
 Use - to specify a range of registers.
