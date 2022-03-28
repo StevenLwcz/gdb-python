@@ -81,7 +81,9 @@ class InfoGSD(gdb.Command):
 #---- general ----- 
 
 class InfoGeneral64(InfoGSD):
-    """info general AArch64"""
+    """info general register-list (x0 - x30 sp lr pc cpsr fpsr fpcr
+Use - to specify a range of registers.
+info general x0 x4 - x9 pc cpsr"""
 
     cmd = "general"
     reglist = x_list
@@ -90,7 +92,9 @@ class InfoGeneral64(InfoGSD):
        super().__init__("info general", gdb.COMMAND_DATA)
 
 class InfoGeneral32(InfoGSD):
-    """info general Armv8-a"""
+    """info general register-list (r0 - r12 sp lr pc cpsr fpscr
+Use - to specify a range of registers.
+info general r0 r4 - r9 pc cpsr"""
 
     cmd = "general"
     reglist = r_list
@@ -101,7 +105,9 @@ class InfoGeneral32(InfoGSD):
 #---- single ----- 
 
 class InfoSingle64(InfoGSD):
-    """info single AArch64"""
+    """info single  register-list (s0 - s31)
+Use - to specify a range of registers.
+info double s0 s4 - s9"""
 
     cmd = "single"
     reglist = s_list
@@ -118,7 +124,9 @@ class InfoSingle64(InfoGSD):
 type_ptr_double = gdb.Value(0.0).type.pointer()
 
 class InfoSingle32(InfoGSD):
-    """info single Armv8-a"""
+    """info single  register-list (s0 - s31)
+Use - to specify a range of registers.
+info double s0 s4 - s9"""
 
     cmd = "single"
     reglist = s_list
@@ -132,7 +140,9 @@ class InfoSingle32(InfoGSD):
 #---- double ----- 
 
 class InfoDouble64(InfoGSD):
-    """info double AArch64"""
+    """info double register-list (d0 - d31)
+Use - to specify a range of registers.
+info double d0 d4 - d9"""
 
     cmd = "double"
     reglist = d_list
@@ -147,7 +157,9 @@ class InfoDouble64(InfoGSD):
         return val['u'].format_string(format='x')
 
 class InfoDouble32(InfoGSD):
-    """info double Armv8-a"""
+    """info double register-list (d0 - d31)
+Use - to specify a range of registers.
+info double d0 d4 - d9"""
 
     cmd = "double"
     reglist = d_list
