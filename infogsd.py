@@ -25,6 +25,11 @@ d_list = {"d0": 0, "d1": 1, "d2": 2, "d3": 3, "d4": 4, "d5": 5, "d6": 6, "d7": 7
           "d17": 17, "d18": 18, "d19": 19, "d20": 20, "d21": 21, "d22": 22, "d23": 23, "d24": 24,
           "d25": 25, "d26": 26, "d27": 27, "d28": 28, "d29": 29, "d30": 30, "d31": 31}
 
+v_list = {"v0": 0, "v1": 1, "v2": 2, "v3": 3, "v4": 4, "v5": 5, "v6": 6, "v7": 7, "v8": 8,
+          "v9": 9, "v10": 10, "v11": 11, "v12": 12, "v13": 13, "v14": 14, "v15": 15, "v16": 16,
+          "v17": 17, "v18": 18, "v19": 19, "v20": 20, "v21": 21, "v22": 22, "v23": 23, "v24": 24,
+          "v25": 25, "v26": 26, "v27": 27, "v28": 28, "v29": 29, "v30": 30, "v31": 31}
+
 #-----------
 # GDB command classes
 
@@ -118,7 +123,6 @@ class InfoSingle32(InfoGSD):
     def __init__(self):
        super(InfoSingle32, self).__init__("info single", gdb.COMMAND_DATA)
 
-
     def format_reg_hex(self, val):
         return val.cast(type_ptr_double).format_string(format="z")
 
@@ -154,12 +158,56 @@ class InfoDouble32(InfoGSD):
     def format_reg_hex(self, val):
         return val['u64'].format_string(format='x')
 
-#---- ----- 
+#---- vector ----- 
+
+class InfoVector64(InfoGSD):
+    """info vector /FMT vector-register-list (v0 - v31}
+/FMT: {b, h, s, d, q}{f, s, u}[x]
+width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
+type  - f: float, s: signed, u: unsigned
+x     - display in hex
+Use - to specify a range of registers.
+info vector /df v0 v2 - v4"""
+
+    cmd = "vector"
+    reglist = v_list
+
+    def __init__(self):
+       super(InfoVector64, self).__init__("info vector", gdb.COMMAND_DATA)
+
+    def invoke(self, arguments, from_tty):
+        self.hex = False 
+        l = len(arguments)
+        if l > 4 and arguments[0:1] == "/":
+            if arguments[1:2] in ['b', 'h', 's', 'd', 'q']:
+                self.width = arguments[1:2]
+                if arguments[2:3] in ['f', 's', 'u']:
+                    self.type = arguments[2:3]
+                    if arguments[3:4] in ['x', ' ']:
+                        if arguments[3:4] == ' ':
+                            self.hex = True
+                        super().invoke(arguments[4:], from_tty)
+                    else:
+                        print(f'info vector /FMT: x expected: {arguments[3:4]}')
+                else:
+                    print(f'info vector /FMT: f,s,u expected: {arguments[2:3]}')
+            else:
+                print(f'info vector /FMT: b,h,s,d,q expected: {arguments[1:2]}')
+        else:
+            print("info vector /FMT register-list")
+
+    def format_reg(self,  val):
+        return val[self.width]['u'].format_string(format='z', repeat_threshold=0) if self.hex \
+               else val[self.width][self.type].format_string(repeat_threshold=0)
+
+    def format_reg_hex(self, val):
+        return ""
 
 if machine() == "aarch64":
     InfoGeneral64()
     InfoSingle64()
     InfoDouble64()
+    InfoVector64()
 else:
     InfoGeneral32()
     InfoSingle32()
