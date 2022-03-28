@@ -87,7 +87,7 @@ class InfoGeneral64(InfoGSD):
     reglist = x_list
 
     def __init__(self):
-       super(InfoGeneral64, self).__init__("info general", gdb.COMMAND_DATA)
+       super().__init__("info general", gdb.COMMAND_DATA)
 
 class InfoGeneral32(InfoGSD):
     """info general Armv8-a"""
@@ -96,7 +96,7 @@ class InfoGeneral32(InfoGSD):
     reglist = r_list
 
     def __init__(self):
-       super(InfoGeneral32, self).__init__("info general", gdb.COMMAND_DATA)
+       super().__init__("info general", gdb.COMMAND_DATA)
 
 #---- single ----- 
 
@@ -107,7 +107,7 @@ class InfoSingle64(InfoGSD):
     reglist = s_list
 
     def __init__(self):
-       super(InfoSingle64, self).__init__("info single", gdb.COMMAND_DATA)
+       super().__init__("info single", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
         return val['f'].format_string()
@@ -124,7 +124,7 @@ class InfoSingle32(InfoGSD):
     reglist = s_list
 
     def __init__(self):
-       super(InfoSingle32, self).__init__("info single", gdb.COMMAND_DATA)
+       super().__init__("info single", gdb.COMMAND_DATA)
 
     def format_reg_hex(self, val):
         return val.cast(type_ptr_double).format_string(format="z")
@@ -138,7 +138,7 @@ class InfoDouble64(InfoGSD):
     reglist = d_list
 
     def __init__(self):
-       super(InfoDouble64, self).__init__("info double", gdb.COMMAND_DATA)
+       super().__init__("info double", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
         return val['f'].format_string()
@@ -153,7 +153,7 @@ class InfoDouble32(InfoGSD):
     reglist = d_list
 
     def __init__(self):
-       super(InfoDouble32, self).__init__("info double", gdb.COMMAND_DATA)
+       super().__init__("info double", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
         return val['f64'].format_string()
@@ -176,7 +176,7 @@ info vector /df v0 v2 - v4"""
     reglist = v_list
 
     def __init__(self):
-       super(InfoVector64, self).__init__("info vector", gdb.COMMAND_DATA)
+       super().__init__("info vector", gdb.COMMAND_DATA)
 
     def invoke(self, arguments, from_tty):
         self.hex = False 
