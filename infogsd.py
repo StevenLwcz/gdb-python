@@ -30,6 +30,9 @@ v_list = {"v0": 0, "v1": 1, "v2": 2, "v3": 3, "v4": 4, "v5": 5, "v6": 6, "v7": 7
           "v17": 17, "v18": 18, "v19": 19, "v20": 20, "v21": 21, "v22": 22, "v23": 23, "v24": 24,
           "v25": 25, "v26": 26, "v27": 27, "v28": 28, "v29": 29, "v30": 30, "v31": 31}
 
+q_list = {"q0": 0, "q1": 1, "q2": 2, "q3": 3, "q4": 4, "q5": 5, "q6": 6, "q7": 7, "q8": 8,
+          "q9": 9, "q10": 10, "q11": 11, "q12": 12, "q13": 13, "q14": 14, "q15": 15}
+
 #-----------
 # GDB command classes
 
@@ -203,6 +206,48 @@ info vector /df v0 v2 - v4"""
     def format_reg_hex(self, val):
         return ""
 
+class InfoVector32(InfoGSD):
+    """info vector /FMT [/x] vector-register-list (q0 - q15}
+/FMT: {u8, u16, u32, u64, f32, f64}
+/x    - display in hex
+Use - to specify a range of registers.
+info vector /u32 q0 q2 - q4"""
+
+    cmd = "vector"
+    reglist = q_list
+
+    def __init__(self):
+       super(InfoVector64, self).__init__("info vector", gdb.COMMAND_DATA)
+
+    def invoke(self, arguments, from_tty):
+        self.hex = False 
+        l = len(arguments)
+        
+        if l > 3 and arguments[0:1] == "/":
+            arguments += ' '
+            i = arguments.index(' ')
+            fmt = arguments[0:i]
+
+            if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
+                self.width = fmt
+                if arguments[i + 1: i + 2] == '/x':
+                    self.hex = True
+                super().invoke(arguments[4:], from_tty)
+            else:
+                print(f'info vector /FMT u8, u16, u32, u64, f32, f64 expected: {fmt}')
+        else:
+            print("info vector /FMT register-list")
+
+    def format_reg(self,  val):
+        if self.width == 'f32': hex = 'u32'
+        elif self.width == 'f64': hex = 'u64'
+        else: hex == self.width
+        return val[hex].format_string(format='z', repeat_threshold=0) if self.hex \
+               else val[self.width].format_string(repeat_threshold=0)
+
+    def format_reg_hex(self, val):
+        return ""
+
 if machine() == "aarch64":
     InfoGeneral64()
     InfoSingle64()
@@ -212,3 +257,4 @@ else:
     InfoGeneral32()
     InfoSingle32()
     InfoDouble32()
+    InfoVector32()
