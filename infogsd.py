@@ -239,8 +239,8 @@ info vector /df v0 v2 - v4"""
 
     def __init__(self):
        super().__init__("info vector", gdb.COMMAND_DATA)
-       self.width = d
-       self.type = s
+       self.width = 'd'
+       self.type = 's'
 
     def invoke(self, arguments, from_tty):
         i = 0
