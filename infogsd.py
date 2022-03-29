@@ -226,7 +226,7 @@ info double d0 d4 - d9"""
 #---- vector ----- 
 
 class InfoVector64(InfoGSD):
-    """info vector /FMT [/x] [vector-register-list] (v0 - v31}
+    """info vector [/FMT] [/x] [vector-register-list] (v0 - v31}
 FMT: {b, h, s, d, q}{f, s, u}
 x  : display in hex
 width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
@@ -239,29 +239,33 @@ info vector /df v0 v2 - v4"""
 
     def __init__(self):
        super().__init__("info vector", gdb.COMMAND_DATA)
+       self.width = d
+       self.type = s
 
     def invoke(self, arguments, from_tty):
+        i = 0
         l = len(arguments)
-        if l > 2 and arguments[0:1] == "/":
+        if l > 2 and arguments[0:1] == "/" and arguments[1:2] != 'x':
             if arguments[1:2] in ['b', 'h', 's', 'd', 'q']:
                 self.width = arguments[1:2]
                 if arguments[2:3] in ['f', 's', 'u']:
                     self.type = arguments[2:3]
                     i = 4
-                    super().invoke(arguments[i:], from_tty)
                 else:
                     print(f'info vector /FMT: f,s,u expected: {arguments[2:3]}')
+                    return
             else:
                 print(f'info vector /FMT: b,h,s,d,q expected: {arguments[1:2]}')
-        else:
-            print("info vector /FMT register-list")
+                return
+
+        super().invoke(arguments[i:], from_tty)
 
     def format_reg(self,  val):
         return val[self.width]['u'].format_string(format='z', repeat_threshold=0) if self.hex \
                else val[self.width][self.type].format_string(repeat_threshold=0)
 
 class InfoVector32(InfoGSD):
-    """info vector /FMT [/x] [vector-register-list] (q0 - q15}
+    """info vector [/FMT] [/x] [vector-register-list] (q0 - q15}
 FMT: {u8, u16, u32, u64, f32, f64}
 x  : display in hex
 Use - to specify a range of registers.
@@ -272,22 +276,25 @@ info vector /u32 q0 q2 - q4"""
 
     def __init__(self):
        super().__init__("info vector", gdb.COMMAND_DATA)
+       self.width = 'u64'
 
     def invoke(self, arguments, from_tty):
+        i = 0
         l = len(arguments)
-        
-        if l > 2 and arguments[0:1] == "/":
+
+        if l > 2 and (arguments[0:2] == '/u' or arguments[0:2] == '/f'):
             arguments += ' '
             i = arguments.index(' ')
             fmt = arguments[1:i]
 
             if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
                 self.width = fmt
-                super().invoke(arguments[i:], from_tty)
+                i += 1
             else:
                 print(f'info vector /FMT u8, u16, u32, u64, f32, f64 expected: {fmt}')
-        else:
-            print("info vector /FMT register-list")
+                return
+
+        super().invoke(arguments[i:], from_tty)
 
     def format_reg(self,  val):
         if self.width == 'f32': hex = 'u32'
