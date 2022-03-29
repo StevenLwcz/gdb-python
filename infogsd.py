@@ -1,6 +1,3 @@
-# add /fmt option for d on 32 and 64
-# add /fmt option for s on 64
-
 from platform import machine
 
 GREEN = "\x1b[38;5;47m"
@@ -51,10 +48,14 @@ class InfoGSD(gdb.Command):
         l = len(argv) 
 
         self.hex = False
-        if l > 0 and argv[0] == '/x':
-            self.hex = True
-            del argv[0]
-            l -= 1
+        if l > 0 and argv[0][0:1] == '/':
+            if argv[0][1:2] == 'x':
+               self.hex = True
+               del argv[0]
+               l -= 1
+            else:
+                print(f'info {self.cmd} /x expected: {argv[0][1:2]}')
+                return
 
         if l == 0:
             list = self.reglist
@@ -90,9 +91,9 @@ class InfoGSD(gdb.Command):
 
 class InfoGeneral64(InfoGSD):
     """info general [/x] [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
+x: display in hex
 Use - to specify a range of registers.
-info general x0 x4 - x9 pc cpsr
-/x: display in hex"""
+info general x0 x4 - x9 pc cpsr"""
 
     cmd = "general"
     reglist = x_list
@@ -101,10 +102,10 @@ info general x0 x4 - x9 pc cpsr
        super().__init__("info general", gdb.COMMAND_DATA)
 
 class InfoGeneral32(InfoGSD):
-    """info general [register-list] (r0 - r12 sp lr pc cpsr fpscr)
+    """info general [/x] [register-list] (r0 - r12 sp lr pc cpsr fpscr)
+x: display in hex
 Use - to specify a range of registers.
-info general r0 r4 - r9 pc cpsr
-/x: display in hex"""
+info general r0 r4 - r9 pc cpsr"""
 
     cmd = "general"
     reglist = r_list
@@ -115,27 +116,38 @@ info general r0 r4 - r9 pc cpsr
 #---- single ----- 
 
 class InfoSingle64(InfoGSD):
-    """info single [/x] [register-list] (s0 - s31)
+    """info single [/FMT] [/x] [register-list] (s0 - s31)
+FMT: f, s, u
+x  : display in hex
+type - f: float, s: signed, u: unsigned
 Use - to specify a range of registers.
-info double s0 s4 - s9
-x: display in hex"""
+info single s0 s4 - s9"""
 
     cmd = "single"
     reglist = s_list
 
     def __init__(self):
        super().__init__("info single", gdb.COMMAND_DATA)
+       self.type = 'f'
+
+    def invoke(self, arguments, from_tty):
+        i = 0
+        if len(arguments) > 1 and arguments[0:1] == "/" and arguments[1:2] in ['f', 's', 'u']:
+            self.type = arguments[1:2]
+            i = 3
+
+        super().invoke(arguments[i:], from_tty)
 
     def format_reg(self, val):
-        return val['u'].format_string(format='z') if self.hex else val['f'].format_string()
+        return val['u'].format_string(format='z') if self.hex else val[self.type].format_string()
 
 type_ptr_double = gdb.Value(0.0).type.pointer()
 
 class InfoSingle32(InfoGSD):
     """info single [/x] [register-list] (s0 - s31)
+x: display in hex
 Use - to specify a range of registers.
-info double s0 s4 - s9
-x: display in hex"""
+info double s0 s4 - s9"""
 
     cmd = "single"
     reglist = s_list
@@ -149,45 +161,74 @@ x: display in hex"""
 #---- double ----- 
 
 class InfoDouble64(InfoGSD):
-    """info double [/x] [register-list] (d0 - d31)
+    """info double [/FMT] [/x] [register-list] (d0 - d31)
+FMT: f, s, u
+x: display in hex
+type - f: float, s: signed, u: unsigned
 Use - to specify a range of registers.
-info double d0 d4 - d9
-x: display in hex"""
+info double d0 d4 - d9"""
 
     cmd = "double"
     reglist = d_list
 
     def __init__(self):
-       super().__init__("info double", gdb.COMMAND_DATA)
+        super().__init__("info double", gdb.COMMAND_DATA)
+        self.type = 'f'
+
+    def invoke(self, arguments, from_tty):
+        i = 0
+        if len(arguments) > 1 and arguments[0:1] == "/" and arguments[1:2] in ['f', 's', 'u']:
+            self.type = arguments[1:2]
+            i = 3
+
+        super().invoke(arguments[i:], from_tty)
 
     def format_reg(self, val):
-        return val['u'].format_string(format='x') if self.hex else val['f'].format_string()
+        return val['u'].format_string(format='x') if self.hex else val[self.type].format_string()
 
 class InfoDouble32(InfoGSD):
-    """info double [/x] [register-list] (d0 - d31)
+    """info double /FMT [/x] [register-list] (d0 - d31)
+FMT: u8, u16, u32, u64 f32, f64
+x: display in hex
 Use - to specify a range of registers.
-info double d0 d4 - d9
-x: display in hex"""
+info double d0 d4 - d9"""
 
     cmd = "double"
     reglist = d_list
 
     def __init__(self):
        super().__init__("info double", gdb.COMMAND_DATA)
+       self.type = 'f64'
+
+    def invoke(self, arguments, from_tty):
+        i = 0
+        l = len(arguments)
+        
+        if l > 2 and arguments[0:1] == "/":
+            arguments += ' '
+            i = arguments.index(' ')
+            fmt = arguments[1:i]
+
+            if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
+                self.type = fmt
+            else:
+                i = 0
+
+        super().invoke(arguments[i:], from_tty)
 
     def format_reg(self, val):
-        return val['u64'].format_string(format='x') if self.hex else val['f64'].format_string()
+        return val['u64'].format_string(format='x') if self.hex else val[self.type].format_string()
 
 #---- vector ----- 
 
 class InfoVector64(InfoGSD):
     """info vector /FMT [/x] [vector-register-list] (v0 - v31}
-/FMT: {b, h, s, d, q}{f, s, u} [/x]
+FMT: {b, h, s, d, q}{f, s, u}
+x  : display in hex
 width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
 type  - f: float, s: signed, u: unsigned
 Use - to specify a range of registers.
-info vector /df v0 v2 - v4
-x: display in hex"""
+info vector /df v0 v2 - v4"""
 
     cmd = "vector"
     reglist = v_list
@@ -215,13 +256,10 @@ x: display in hex"""
         return val[self.width]['u'].format_string(format='z', repeat_threshold=0) if self.hex \
                else val[self.width][self.type].format_string(repeat_threshold=0)
 
-    def format_reg_hex(self, val):
-        return ""
-
 class InfoVector32(InfoGSD):
     """info vector /FMT [/x] [vector-register-list] (q0 - q15}
-/FMT: {u8, u16, u32, u64, f32, f64}
-x   : display in hex
+FMT: {u8, u16, u32, u64, f32, f64}
+x  : display in hex
 Use - to specify a range of registers.
 info vector /u32 q0 q2 - q4"""
 
