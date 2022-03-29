@@ -147,7 +147,7 @@ class InfoSingle32(InfoGSD):
     """info single [/x] [register-list] (s0 - s31)
 x: display in hex
 Use - to specify a range of registers.
-info double s0 s4 - s9"""
+info single s0 s4 - s9"""
 
     cmd = "single"
     reglist = s_list
@@ -211,13 +211,17 @@ info double d0 d4 - d9"""
 
             if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
                 self.type = fmt
+                i += 1
             else:
                 i = 0
 
         super().invoke(arguments[i:], from_tty)
 
     def format_reg(self, val):
-        return val['u64'].format_string(format='x') if self.hex else val[self.type].format_string()
+        if self.type == 'f32': hex = 'u32'
+        elif self.type == 'f64': hex = 'u64'
+        else: hex = self.type
+        return val[hex].format_string(format='x') if self.hex else val[self.type].format_string()
 
 #---- vector ----- 
 
