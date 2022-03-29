@@ -1,3 +1,6 @@
+# add /fmt option for d on 32 and 64
+# add /fmt option for s on 64
+
 from platform import machine
 
 GREEN = "\x1b[38;5;47m"
@@ -45,7 +48,15 @@ class InfoGSD(gdb.Command):
         expand = False
         prev = None
 
-        if len(argv) == 0:
+        l = len(argv) 
+
+        self.hex = False
+        if l > 0 and argv[0] == '/x':
+            self.hex = True
+            del argv[0]
+            l -= 1
+
+        if l == 0:
             list = self.reglist
         else:
             for name in argv:
@@ -70,20 +81,18 @@ class InfoGSD(gdb.Command):
         frame = gdb.selected_frame()
         for name in list:
             val = frame.read_register(name)
-            print(f'{GREEN}{name:<10}{RESET}{self.format_reg(val):<24} {self.format_reg_hex(val)}')
+            print(f'{GREEN}{name:<10}{RESET}{self.format_reg(val):<24}')
 
     def format_reg(self, val):
-        return val.format_string()
-
-    def format_reg_hex(self, val):
-        return val.format_string(format='x')
+        return val.format_string(format='x') if self.hex else val.format_string()
 
 #---- general ----- 
 
 class InfoGeneral64(InfoGSD):
-    """info general [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
+    """info general [/x] [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
 Use - to specify a range of registers.
-info general x0 x4 - x9 pc cpsr"""
+info general x0 x4 - x9 pc cpsr
+/x: display in hex"""
 
     cmd = "general"
     reglist = x_list
@@ -94,7 +103,8 @@ info general x0 x4 - x9 pc cpsr"""
 class InfoGeneral32(InfoGSD):
     """info general [register-list] (r0 - r12 sp lr pc cpsr fpscr)
 Use - to specify a range of registers.
-info general r0 r4 - r9 pc cpsr"""
+info general r0 r4 - r9 pc cpsr
+/x: display in hex"""
 
     cmd = "general"
     reglist = r_list
@@ -105,9 +115,10 @@ info general r0 r4 - r9 pc cpsr"""
 #---- single ----- 
 
 class InfoSingle64(InfoGSD):
-    """info single [register-list] (s0 - s31)
+    """info single [/x] [register-list] (s0 - s31)
 Use - to specify a range of registers.
-info double s0 s4 - s9"""
+info double s0 s4 - s9
+x: display in hex"""
 
     cmd = "single"
     reglist = s_list
@@ -116,17 +127,15 @@ info double s0 s4 - s9"""
        super().__init__("info single", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
-        return val['f'].format_string()
-
-    def format_reg_hex(self, val):
-        return val['u'].format_string(format='z')
+        return val['u'].format_string(format='z') if self.hex else val['f'].format_string()
 
 type_ptr_double = gdb.Value(0.0).type.pointer()
 
 class InfoSingle32(InfoGSD):
-    """info single [register-list] (s0 - s31)
+    """info single [/x] [register-list] (s0 - s31)
 Use - to specify a range of registers.
-info double s0 s4 - s9"""
+info double s0 s4 - s9
+x: display in hex"""
 
     cmd = "single"
     reglist = s_list
@@ -134,15 +143,16 @@ info double s0 s4 - s9"""
     def __init__(self):
        super().__init__("info single", gdb.COMMAND_DATA)
 
-    def format_reg_hex(self, val):
-        return val.cast(type_ptr_double).format_string(format="z")
+    def format_reg(self, val):
+        return val.cast(type_ptr_double).format_string(format="z") if self.hex else val.format_string()
 
 #---- double ----- 
 
 class InfoDouble64(InfoGSD):
-    """info double [register-list] (d0 - d31)
+    """info double [/x] [register-list] (d0 - d31)
 Use - to specify a range of registers.
-info double d0 d4 - d9"""
+info double d0 d4 - d9
+x: display in hex"""
 
     cmd = "double"
     reglist = d_list
@@ -151,15 +161,13 @@ info double d0 d4 - d9"""
        super().__init__("info double", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
-        return val['f'].format_string()
-
-    def format_reg_hex(self, val):
-        return val['u'].format_string(format='x')
+        return val['u'].format_string(format='x') if self.hex else val['f'].format_string()
 
 class InfoDouble32(InfoGSD):
-    """info double [register-list] (d0 - d31)
+    """info double [/x] [register-list] (d0 - d31)
 Use - to specify a range of registers.
-info double d0 d4 - d9"""
+info double d0 d4 - d9
+x: display in hex"""
 
     cmd = "double"
     reglist = d_list
@@ -168,21 +176,18 @@ info double d0 d4 - d9"""
        super().__init__("info double", gdb.COMMAND_DATA)
 
     def format_reg(self, val):
-        return val['f64'].format_string()
-
-    def format_reg_hex(self, val):
-        return val['u64'].format_string(format='x')
+        return val['u64'].format_string(format='x') if self.hex else val['f64'].format_string()
 
 #---- vector ----- 
 
 class InfoVector64(InfoGSD):
-    """info vector /FMT [vector-register-list] (v0 - v31}
-/FMT: {b, h, s, d, q}{f, s, u}[x]
+    """info vector /FMT [/x] [vector-register-list] (v0 - v31}
+/FMT: {b, h, s, d, q}{f, s, u} [/x]
 width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
 type  - f: float, s: signed, u: unsigned
-x     - display in hex
 Use - to specify a range of registers.
-info vector /df v0 v2 - v4"""
+info vector /df v0 v2 - v4
+x: display in hex"""
 
     cmd = "vector"
     reglist = v_list
@@ -191,7 +196,6 @@ info vector /df v0 v2 - v4"""
        super().__init__("info vector", gdb.COMMAND_DATA)
 
     def invoke(self, arguments, from_tty):
-        self.hex = False 
         l = len(arguments)
         if l > 2 and arguments[0:1] == "/":
             if arguments[1:2] in ['b', 'h', 's', 'd', 'q']:
@@ -199,9 +203,6 @@ info vector /df v0 v2 - v4"""
                 if arguments[2:3] in ['f', 's', 'u']:
                     self.type = arguments[2:3]
                     i = 4
-                    if arguments[3:4] == 'x':
-                        self.hex = True
-                        i += 1
                     super().invoke(arguments[i:], from_tty)
                 else:
                     print(f'info vector /FMT: f,s,u expected: {arguments[2:3]}')
@@ -220,7 +221,7 @@ info vector /df v0 v2 - v4"""
 class InfoVector32(InfoGSD):
     """info vector /FMT [/x] [vector-register-list] (q0 - q15}
 /FMT: {u8, u16, u32, u64, f32, f64}
-/x  : display in hex
+x   : display in hex
 Use - to specify a range of registers.
 info vector /u32 q0 q2 - q4"""
 
@@ -231,7 +232,6 @@ info vector /u32 q0 q2 - q4"""
        super().__init__("info vector", gdb.COMMAND_DATA)
 
     def invoke(self, arguments, from_tty):
-        self.hex = False 
         l = len(arguments)
         
         if l > 2 and arguments[0:1] == "/":
@@ -241,10 +241,6 @@ info vector /u32 q0 q2 - q4"""
 
             if fmt in ['u8', 'u16', 'u32', 'u64', 'f32', 'f64']:
                 self.width = fmt
-                i += 1
-                if arguments[i:i + 2] == '/x':
-                    self.hex = True
-                    i += 3
                 super().invoke(arguments[i:], from_tty)
             else:
                 print(f'info vector /FMT u8, u16, u32, u64, f32, f64 expected: {fmt}')
@@ -257,9 +253,6 @@ info vector /u32 q0 q2 - q4"""
         else: hex = self.width
         return val[hex].format_string(format='z', repeat_threshold=0) if self.hex \
                else val[self.width].format_string(repeat_threshold=0)
-
-    def format_reg_hex(self, val):
-        return ""
 
 if machine() == "aarch64":
     InfoGeneral64()
