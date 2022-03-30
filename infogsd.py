@@ -90,7 +90,8 @@ class InfoGSD(gdb.Command):
 #---- general ----- 
 
 class InfoGeneral64(InfoGSD):
-    """info general [/x] [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
+    """Display general and special registers and values for a given range.
+info general [/x] [register-list] (x0 - x30 sp lr pc cpsr fpsr fpcr)
 x: display in hex
 Use - to specify a range of registers.
 info general x0 x4 - x9 pc cpsr"""
@@ -102,7 +103,8 @@ info general x0 x4 - x9 pc cpsr"""
        super().__init__("info general", gdb.COMMAND_DATA)
 
 class InfoGeneral32(InfoGSD):
-    """info general [/x] [register-list] (r0 - r12 sp lr pc cpsr fpscr)
+    """Display general and special registers and values for a given range.
+info general [/x] [register-list] (r0 - r12 sp lr pc cpsr fpscr)
 x: display in hex
 Use - to specify a range of registers.
 info general r0 r4 - r9 pc cpsr"""
@@ -116,7 +118,8 @@ info general r0 r4 - r9 pc cpsr"""
 #---- single ----- 
 
 class InfoSingle64(InfoGSD):
-    """info single [/FMT] [/x] [register-list] (s0 - s31)
+    """Display the single width vector registers and values for a given range and type - default: f.
+info single [/FMT] [/x] [register-list] (s0 - s31)
 FMT: f, s, u
 x  : display in hex
 type - f: float, s: signed, u: unsigned
@@ -144,7 +147,8 @@ info single s0 s4 - s9"""
 type_ptr_double = gdb.Value(0.0).type.pointer()
 
 class InfoSingle32(InfoGSD):
-    """info single [/x] [register-list] (s0 - s31)
+    """Display the single precision floating point registers and values for a given range.
+info single [/x] [register-list] (s0 - s31)
 x: display in hex
 Use - to specify a range of registers.
 info single s0 s4 - s9"""
@@ -161,7 +165,8 @@ info single s0 s4 - s9"""
 #---- double ----- 
 
 class InfoDouble64(InfoGSD):
-    """info double [/FMT] [/x] [register-list] (d0 - d31)
+    """Display the double width vector registers and values for a given range and type - default: f.
+info double [/FMT] [/x] [register-list] (d0 - d31)
 FMT: f, s, u
 x: display in hex
 type - f: float, s: signed, u: unsigned
@@ -187,7 +192,8 @@ info double d0 d4 - d9"""
         return val['u'].format_string(format='x') if self.hex else val[self.type].format_string()
 
 class InfoDouble32(InfoGSD):
-    """info double /FMT [/x] [register-list] (d0 - d31)
+    """Display the double width vector registers and values for a given range and type - default: f64.
+info double /FMT [/x] [register-list] (d0 - d31)
 FMT: u8, u16, u32, u64 f32, f64
 x: display in hex
 Use - to specify a range of registers.
@@ -226,7 +232,8 @@ info double d0 d4 - d9"""
 #---- vector ----- 
 
 class InfoVector64(InfoGSD):
-    """info vector [/FMT] [/x] [vector-register-list] (v0 - v31}
+    """Display the vector registers and values for a given range, width and type - default: d.s.
+info vector [/FMT] [/x] [vector-register-list] (v0 - v31}
 FMT: {b, h, s, d, q}{f, s, u}
 x  : display in hex
 width - b: byte, h: 2 bytes, s: 4 bytes, d: 8 bytes, q: 16 bytes.
@@ -265,7 +272,8 @@ info vector /df v0 v2 - v4"""
                else val[self.width][self.type].format_string(repeat_threshold=0)
 
 class InfoVector32(InfoGSD):
-    """info vector [/FMT] [/x] [vector-register-list] (q0 - q15}
+    """Display the vector registers and values for a given range and type - default: u64.
+info vector [/FMT] [/x] [vector-register-list] (q0 - q15}
 FMT: {u8, u16, u32, u64, f32, f64}
 x  : display in hex
 Use - to specify a range of registers.
