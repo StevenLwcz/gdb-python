@@ -1,3 +1,4 @@
+# to do... create Vector64 and Vector32 with common Vector so help is specific to arch, etc.....
 from platform import machine
 
 GREEN = "\x1b[38;5;47m"
@@ -20,23 +21,15 @@ else:
 class VectorCmd(gdb.Command):
     """Add vector registers to the TUI Window vector.
 vector /OPT vector-register-list
-Adds vector registers to the vector window. If a register already exists it gets updated with any new specifiers.
+If a register already exists it gets updated with any new specifiers.
 /OPT: x = display registers values in hex.
       c = clears vector window
       d = deletes registers from window: vector-register-list without.width or type spec.
       o = output the vector window to a series of vector commands to the cmd window.
-          To record to a file: (gdb) set logging {on|off} [filename]
-Register format AArch64: {reg}[.width][.type]
-reg:   v, b, h, s, d, q
-width: b, h, s, d, q     - Width only allowed with v.
-type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
-vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h
-Register format Armv8-a: {reg}[.type]
-reg:   d, q
-type:  u8, u16, u32, u64, f32, f64"""
+          To record to a file: (gdb) set logging {on|off} [filename]"""
 
-    def __init__(self):
-       super(VectorCmd, self).__init__("vector", gdb.COMMAND_DATA)
+    def __init__(self, cmd, cmd_type):
+       super().__init__("vector", gdb.COMMAND_DATA)
        self.window = None
        self.hex = False
        self.clear = False
@@ -69,10 +62,7 @@ type:  u8, u16, u32, u64, f32, f64"""
                     argv = gdb.string_to_argv(arguments)
                     self.window.delete_vector(argv[1:])
                 else:
-                    if machine() == "aarch64":
-                        self.parse_registers(arguments[offset:], self.hex)
-                    else:
-                        self.parse_registers_32(arguments[offset:], self.hex)
+                    self.parse_registers(arguments[offset:], self.hex)
 
             except SyntaxError as err:
                 print(err)
@@ -109,6 +99,17 @@ type:  u8, u16, u32, u64, f32, f64"""
            raise SyntaxError(f'vector /OPT vector-register-list')
 
        return i
+
+class Vector64Cmd(VectorCmd):
+    """\nRegister format AArch64: {reg}[.width][.type]
+reg:   v, b, h, s, d, q
+width: b, h, s, d, q     - Width only allowed with v.
+type:  f, s, u           - Type f not allowed with width b or q, or reg b or q.
+vector v0.b.u v1.s.f b2.u h3.f q4.u v5 b6 s7 q8 v9.h"""
+
+    def __init__(self):
+       self.__doc__ = VectorCmd.__doc__ + self.__doc__
+       super().__init__("vector", gdb.COMMAND_DATA)
 
     def parse_registers(self, line, hex):
         i = 0
@@ -167,8 +168,17 @@ type:  u8, u16, u32, u64, f32, f64"""
                 raise SyntaxError(f"vector: invalid register {line[start:]} register letter expected {reg_spec}.")
 
             i += 1
-            
-    def parse_registers_32(self, line, hex):
+
+class Vector32Cmd(VectorCmd):
+    """\nRegister format Armv8-a: {reg}[.type]
+reg:   d, q
+type:  u8, u16, u32, u64, f32, f64"""
+
+    def __init__(self):
+       self.__doc__ = VectorCmd.__doc__ + self.__doc__
+       super().__init__("vector", gdb.COMMAND_DATA)
+
+    def parse_registers(self, line, hex):
         i = 0
         l = len(line)
         line += " " # make peep ahead easier
@@ -234,7 +244,10 @@ type:  u8, u16, u32, u64, f32, f64"""
 
             i += 1
 
-vectorCmd = VectorCmd()
+if machine() == "aarch64":
+    vectorCmd = Vector64Cmd()
+else:
+    vectorCmd = Vector32Cmd()
 
 def VectorWinFactory(tui):
     win = VectorWindow(tui)
@@ -331,3 +344,4 @@ class VectorWindow(object):
             self.render()
 
 gdb.register_window_type("vector", VectorWinFactory)
+
