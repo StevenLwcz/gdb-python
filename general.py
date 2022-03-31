@@ -306,15 +306,17 @@ def decode_fpscr(reg):
 class RegisterCmd(gdb.Command):
     """Add registers to the custom TUI Window register.
 register OPT register-list
-Register-list space separated. Ranges can be specified with -. For example:
-  register x0 x10 - x15 s0 s4 - s6 d5 - d9*
-  register r0 r10 - r15 s0 s4 - s6 d5 - d9
-Special registers: lr, pc, sp, cpsr, fpsr*, fpcr*, fpscr. *AArch64
 OPT: del register-list
      hex {on|off} register-list
-   clear - clear all registers from the window"""
+   clear - clear all registers from the window
+Ranges can be specified with -:"""
 
     def __init__(self):
+        if machine() == "aarch64":
+            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
+        else:
+            self.__doc__ += "\nregister r0 r10 - r15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpscr"
+ 
         super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
         self.win = None
 
