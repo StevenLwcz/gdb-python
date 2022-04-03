@@ -184,12 +184,18 @@ type_ptr_double = gdb.Value(0.0).type.pointer()
 class SReg(Register):
 
     def __str__(self):
-        return self.val.cast(type_ptr_double).format_string(format="z") if self.hex else self.val.format_string()
+        hex = True if self.fmt == "z" or self.fmt == 'x' else False
+        return self.val.cast(type_ptr_double).format_string(format="z") if hex else self.val.format_string()
 
 class DReg(Register):
 
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'f'
+
     def __str__(self):
-        return self.val['u64'].format_string(format="z") if self.hex else self.val['f64'].format_string()
+        return self.val['u64'].format_string(format=self.fmt)
+        # return self.val['u64'].format_string(format="z") if self.hex else self.val['f64'].format_string()
 
 class Qav8Reg(Register):
 
@@ -218,7 +224,8 @@ class FPSCRReg(Register):
 
     def __str__(self):
         flags, st = decode_fpscr(self.val)
-        return " " + self.val.format_string(format='z') + " " + flags if self.hex else " " + flags + st
+        hex = True if self.fmt == "z" or self.fmt == 'x' else False
+        return " " + self.val.format_string(format='z') + " " + flags if hex else " " + flags + st
 
 if machine() == "aarch64":
     reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg, 'w': WReg}
