@@ -40,7 +40,11 @@ reg_aarch64 = {"x0": 0, "x1": 1, "x2": 2, "x3": 3, "x4": 4, "x5": 5, "x6": 6, "x
        "v9": 200, "v10": 201, "v11": 202, "v12": 203, "v13": 204, "v14": 205, "v15": 206, "v16": 207,
        "v17": 208, "v18": 209, "v19": 210, "v20": 211, "v21": 212, "v22": 213, "v23": 214, "v24": 215,
        "v25": 216, "v26": 217, "v27": 218, "v28": 219, "v29": 220, "v30": 221, "v31": 222,
-       "lr": 223, "pc": 224, "sp": 225, "cpsr": 226, "fpsr": 227, "fpcr": 228}
+       "w0": 223, "w1": 224, "w2": 225, "w3": 226, "w4": 227, "w5": 228, "w6": 229, "w7": 230, "w8": 231,
+       "w9": 232, "w10": 233, "w11": 234, "w12": 235, "w13": 236, "w14": 237, "w15": 238, "w16": 239,
+       "w17": 240, "w18": 241, "w19": 242, "w20": 243, "w21": 244, "w22": 245, "w23": 246, "w24": 247,
+       "w25": 248, "w26": 249, "w27": 250, "w28": 251, "w29": 252, "w30": 253,
+       "pc": 254, "sp": 255, "cpsr": 256, "fpsr": 257, "fpcr": 258}
 
 reg_armv8a = {"r0": 0, "r1": 1, "r2": 2, "r3": 3, "r4": 4, "r5": 5, "r6": 6, "r7": 7, "r8": 8,
        "r9": 9, "r10": 10, "r11": 11, "r12": 12,
@@ -182,6 +186,9 @@ class Qav8Reg(Register):
     def is_vector(self):
         return True
 
+class WReg(Register):
+    pass
+
 class FPSCRReg(Register):
 
     def __str__(self):
@@ -189,7 +196,7 @@ class FPSCRReg(Register):
         return " " + self.val.format_string(format='z') + " " + flags if self.hex else " " + flags + st
 
 if machine() == "aarch64":
-    reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg}
+    reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg, 'w': WReg}
     reg_special = {'lr': LRReg, 'pc': PCReg, 'sp': SPReg, 'cpsr': CPSRReg, 'fpsr': FPSRReg, 'fpcr': FPCRReg}
 else:
     reg_class = {'r': XReg, 's': SReg, 'd': DReg, 'q': Qav8Reg}
@@ -313,7 +320,7 @@ Ranges can be specified with -:"""
 
     def __init__(self):
         if machine() == "aarch64":
-            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
+            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9 w0 x10 - x15\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
         else:
             self.__doc__ += "\nregister r0 r10 - r15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpscr"
  
@@ -491,4 +498,3 @@ class RegisterWindow(object):
             self.render()
 
 gdb.register_window_type("register", RegisterFactory)
-
