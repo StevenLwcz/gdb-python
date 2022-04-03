@@ -187,7 +187,11 @@ class Qav8Reg(Register):
         return True
 
 class WReg(Register):
-    pass
+
+    def value(self):
+        self.val = super().value() & 0xffffffff
+        return self.val
+
 
 class FPSCRReg(Register):
 
