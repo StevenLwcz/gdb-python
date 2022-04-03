@@ -72,7 +72,7 @@ class Register(object):
     def __init__(self, name):
         self.name = name
         self.val = None
-        self.hex = False
+        self.fmt = 'd'
         self.colour = WHITE
 
     @classmethod
@@ -89,7 +89,7 @@ class Register(object):
         return self.colour + format(str(self), format_spec)
          
     def __str__(self):
-        return self.val.format_string(format='x') if self.hex else self.val.format_string()
+        return self.val.format_string(format=self.fmt)
 
     def value(self):
         val = Register.frame.read_register(self.name)
@@ -105,13 +105,22 @@ class XReg(Register):
 
 class HSDReg(Register):
 
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'f'
+
     def __str__(self):
-        return self.val['u'].format_string(format="z") if self.hex else  self.val['f'].format_string()
+        if self.fmt == 'd': 
+            self.fmt = 's'
+        if self.fmt in ['s', 'u', 'f']:
+            return self.val[self.fmt].format_string()
+        else:
+            return self.val['u'].format_string(format='z')
 
 class BReg(Register):
 
     def __str__(self):
-        return self.val['u'].format_string(format="z") if self.hex else self.val['u'].format_string()
+        return self.val['u'].format_string(format=self.fmt)
 
 class QReg(Register):
 
@@ -119,7 +128,7 @@ class QReg(Register):
         return self.colour + format(str(self), "<53")
 
     def __str__(self):
-        return self.val['u'].format_string(format="z") if self.hex else self.val['u'].format_string()
+        return self.val['u'].format_string(format=self.fmt)
 
     def is_vector(self):
         return True
@@ -130,7 +139,7 @@ class VReg(Register):
         return self.colour + format(str(self), "<53")
 
     def __str__(self):
-        return self.val['q']['u'][0].format_string(format="z") if self.hex else self.val['q']['u'][0].format_string()
+        return self.val['q']['u'][0].format_string(format=self.fmt)
 
     def is_vector(self):
         return True
@@ -139,28 +148,35 @@ class LRReg(Register):
     pass
 
 class PCReg(Register):
-    pass
+
+    def __str__(self):
+        return self.val.format_string()
 
 class SPReg(Register):
-    pass
+
+    def __str__(self):
+        return self.val.format_string()
 
 class FPCRReg(Register):
 
     def __str__(self):
         flags = decode_fpcr(self.val)
-        return self.val.format_string(format='z') + " " + flags if self.hex else flags
+        hex = True if self.fmt == "z" or self.fmt == 'x' else False
+        return self.val.format_string(format='z') + " " + flags if hex else flags
 
 class FPSRReg(Register):
 
     def __str__(self):
         flags = decode_fpsr(self.val)
-        return self.val.format_string(format='z') + " " + flags if self.hex else flags
+        hex = True if self.fmt == "z" or self.fmt == 'x' else False
+        return self.val.format_string(format='z') + " " + flags if hex else flags
 
 class CPSRReg(Register):
 
     def __str__(self):
         flags = decode_cpsr(self.val, False)[0]
-        return self.val.format_string(format='z') + " " + flags  if self.hex else flags
+        hex = True if self.fmt == "z" or self.fmt == 'x' else False
+        return self.val.format_string(format='z') + " " + flags  if hex else flags
 
 # used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
 type_ptr_double = gdb.Value(0.0).type.pointer()
@@ -173,7 +189,7 @@ class SReg(Register):
 class DReg(Register):
 
     def __str__(self):
-        return self.val['u64'].format_string(format="z") if self.hex else  self.val['f64'].format_string()
+        return self.val['u64'].format_string(format="z") if self.hex else self.val['f64'].format_string()
 
 class Qav8Reg(Register):
 
@@ -192,6 +208,11 @@ class WReg(Register):
         self.val = super().value() & 0xffffffff
         return self.val
 
+    def __str__(self):
+        if self.fmt == 'd' and self.val > 0x7fffffff:
+            self.val = self.val | 0xffffffff00000000
+
+        return self.val.format_string(format=self.fmt)
 
 class FPSCRReg(Register):
 
@@ -316,9 +337,9 @@ def decode_fpscr(reg):
 
 class RegisterCmd(gdb.Command):
     """Add registers to the custom TUI Window register.
-register OPT register-list
+register OPT|/FMT register-list
+/FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float
 OPT: del register-list
-     hex {on|off} register-list
    clear - clear all registers from the window
 Ranges can be specified with -:"""
 
@@ -343,27 +364,25 @@ Ranges can be specified with -:"""
         prev = None
         expand = False
         delete = False
-        hex = None
+        format = None
 
         args = gdb.string_to_argv(arguments)
         argc = len(args)
         if argc == 0:
             print("register register-list")
             return
-        elif args[0] == "hex":
-            if argc > 2:
-                if args[1] == 'on':
-                    hex = True
-                elif args[1] == 'off':
-                    hex = False
+        elif args[0][0:1] == '/':
+            if argc > 1:
+                f = args[0][1:2]
+                if f in ['x', 'z', 's', 'u', 'f']:
+                    format = 'd' if f == 's' else f
                 else:
-                    print("register hex [on|off] register-list")
+                    print(f'register /FMT: x, z, , s, u or f expected: {f}')
                     return
+                del args[0]
             else:
-                print("register hex [on|off] register-list")
+                print(f'register /FMT register-list')
                 return
-            del args[0]
-            del args[0]
         elif args[0] == "clear":
             self.win.clear_registers()
             return
@@ -397,8 +416,8 @@ Ranges can be specified with -:"""
 
         if delete:
             self.win.del_registers(reg_list)
-        elif hex is not None:
-            self.win.hex_registers(reg_list, hex)
+        elif format is not None:
+            self.win.format_registers(reg_list, format)
         else:
             self.win.add_registers(reg_list)
 
@@ -436,12 +455,12 @@ class RegisterWindow(object):
             except:
                print(f'register del {name} not found')
 
-    def hex_registers(self, args, mode):
+    def format_registers(self, args, format):
         for name in args:
             if not name in self.regs:
                 self.add_registers([name])
 
-            self.regs[name].hex = mode
+            self.regs[name].fmt = format
 
     def clear_registers(self):
         self.regs.clear()
