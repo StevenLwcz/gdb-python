@@ -345,14 +345,14 @@ def decode_fpscr(reg):
 class RegisterCmd(gdb.Command):
     """Add registers to the custom TUI Window register.
 register OPT|/FMT register-list
-/FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float
+/FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float, c: char
 OPT: del register-list
    clear - clear all registers from the window
 Ranges can be specified with -:"""
 
     def __init__(self):
         if machine() == "aarch64":
-            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9 w0 x10 - x15\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
+            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9 w0 w10 - w15\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
         else:
             self.__doc__ += "\nregister r0 r10 - r15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpscr"
  
@@ -381,10 +381,10 @@ Ranges can be specified with -:"""
         elif args[0][0:1] == '/':
             if argc > 1:
                 f = args[0][1:2]
-                if f in ['x', 'z', 's', 'u', 'f']:
+                if f in ['x', 'z', 's', 'u', 'f', 'c']:
                     format = 'd' if f == 's' else f
                 else:
-                    print(f'register /FMT: x, z, , s, u or f expected: {f}')
+                    print(f'register /FMT: x, z, s, u, f or c expected: {f}')
                     return
                 del args[0]
             else:
