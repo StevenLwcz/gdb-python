@@ -174,9 +174,9 @@ class FPSRReg(Register):
 class CPSRReg(Register):
 
     def __str__(self):
-        flags = decode_cpsr(self.val, False)[0]
+        flags, st = decode_cpsr(self.val, False)
         hex = True if self.fmt == "z" or self.fmt == 'x' else False
-        return self.val.format_string(format='z') + " " + flags  if hex else flags
+        return self.val.format_string(format='z') + " " + flags + st if hex else flags + st
 
 # used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
 type_ptr_double = gdb.Value(0.0).type.pointer()
@@ -260,9 +260,9 @@ def decode_cpsr(reg, extra):
 
    # signed
    if (not z) and n == v: str += " GT"
-   if n == v: str += " GE"
+   # if n == v: str += " GE"
    if not n == v: str += " LT"
-   if z or (not n == v): str += " LE"
+   # if z or (not n == v): str += " LE"
 
    if extra:
        # unsigned
