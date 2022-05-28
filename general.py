@@ -347,8 +347,9 @@ class RegisterCmd(gdb.Command):
 register OPT|/FMT register-list
 /FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float, c: char
 OPT: del register-list
-   clear - clear all registers from the window
-Ranges can be specified with -:"""
+     clear - clear all registers from the window
+     save filename - save register-list to file (use so filename to read back)
+Ranges can be specified with -"""
 
     def __init__(self):
         if machine() == "aarch64":
@@ -399,6 +400,13 @@ Ranges can be specified with -:"""
                 del args[0]
             else:
                 print("register del register-list")
+                return
+        elif args[0] == 'save':
+            if argc == 2:
+                self.win.save_registers(args[1])
+                return
+            else:
+                print("register save filename")
                 return
             
         for reg in args:
@@ -471,6 +479,15 @@ class RegisterWindow(object):
 
     def clear_registers(self):
         self.regs.clear()
+
+    def save_registers(self, filename):
+        try:
+            with open(filename, "w") as f:
+                for name in self.regs:
+                    f.write(f'reg {name}\n')
+                    print(f'reg {name}')
+        except IOError:
+            print(f'reg: could not write to {filename}')
 
     def close(self):
         RegisterWindow.regs_save = self.regs
