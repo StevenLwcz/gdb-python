@@ -1,4 +1,3 @@
-from platform import machine
 #--------------------------
 # Colours
 
@@ -59,25 +58,8 @@ class Register(object):
         self.val = val
         return self.val
 
-    def is_vector(self):
-        return False
-
 class XReg(Register):
     pass
-
-class HSDReg(Register):
-
-    def __init__(self, name):
-        super().__init__(name)
-        self.fmt = 'f'
-
-    def __str__(self):
-        if self.fmt == 'd': 
-            self.fmt = 's'
-        if self.fmt in ['s', 'u', 'f']:
-            return self.val[self.fmt].format_string()
-        else:
-            return self.val['u'].format_string(format='z')
 
 class LRReg(Register):
 
@@ -94,151 +76,23 @@ class SPReg(Register):
     def __str__(self):
         return self.val.format_string()
 
-# used to print floats in hex by casting the value to a pointer. We could use any pointer type really.
-type_ptr_double = gdb.Value(0.0).type.pointer()
-
-class SReg(Register):
-
-    def __str__(self):
-        hex = True if self.fmt == "z" or self.fmt == 'x' else False
-        return self.val.cast(type_ptr_double).format_string(format="z") if hex else self.val.format_string()
-
-class DReg(Register):
-
-    def __init__(self, name):
-        super().__init__(name)
-        self.fmt = 'f'
-
-    def __str__(self):
-        return self.val['u64'].format_string(format=self.fmt)
-        # return self.val['u64'].format_string(format="z") if self.hex else self.val['f64'].format_string()
-
-
 reg_class = {'x': XReg, 'a': XReg, 't': XReg, 's': XReg}
 reg_special = {'ra': LRReg, 'pc': PCReg, 'sp': SPReg}
 
-
-#--------------------------
-# decode system registers
-
-# cpsr flags 
-N_FLAG = 0x80000000  # Negative
-Z_FLAG = 0x40000000  # Zero
-C_FLAG = 0x20000000  # Carry
-V_FLAG = 0x10000000  # Overflow
-
-def decode_cpsr(reg, extra):
-   flags = ""
-   n = (reg & N_FLAG) == N_FLAG
-   z = (reg & Z_FLAG) == Z_FLAG
-   c = (reg & C_FLAG) == C_FLAG
-   v = (reg & V_FLAG) == V_FLAG
-   if n: flags +="N "
-   if z: flags +="Z "
-   if c: flags +="C "
-   if v: flags +="V"
-
-   if z: str = "EQ"
-   else: str = "NE"
-
-   # signed
-   if (not z) and n == v: str += " GT"
-   # if n == v: str += " GE"
-   if not n == v: str += " LT"
-   # if z or (not n == v): str += " LE"
-
-   if extra:
-       # unsigned
-       str += " -"
-       if c and not z: str += " HI"  # greater than (Higher)
-       if c: str += " HS"            # greater than, equal to
-       else: str += " LO"            # less than (Lower)
-       if (not c) or z: str += " LS" # less than, equal to
-
-       #
-       str += " -"
-       if n: str += " MI"
-       else: str += " PL"
-       if v: str += " VS"
-       else: str += " VC"
-
-   return flags, str
-
-# fpcr flags
-RM_MASK = 0xc00000 # 23-22
-RN_FLAG = 0x000000 # Round to nearest tie zero
-RP_FLAG = 0x400000 # Round towards + infinity (ceil)
-RM_FLAG = 0x800000 # Round towards - infinity (floor)
-RZ_FLAG = 0xc00000 # Round towards zero (truncate)
-       
-DZE_FLAG = 0x200 # Divide by Zero Enabled
-
-def decode_fpcr(reg):
-    mode = RM_MASK & reg
-    if mode == RN_FLAG:
-       str = "RN"
-    elif mode == RP_FLAG:
-       str = "RP"
-    elif mode == RM_FLAG:
-       str = "RM"
-    else:
-        str = "RZ"
-
-    if (reg & DZE_FLAG) == DZE_FLAG: str += " DZE"
-
-    return str
-
-# fpsr flags
-Q_FLAG = 0x08000000  # QC  Saturation
-D_FLAG = 0x00000002  # DZC Divide by zero
-
-def decode_fpsr(reg):
-    str = ""
-    if (reg & Q_FLAG) == Q_FLAG: str += "QC "
-    if (reg & D_FLAG) == D_FLAG: str += "DZC"
-
-    return str
- 
-def decode_fpscr(reg):
-     flags = ""
-     n = (reg & N_FLAG) == N_FLAG
-     z = (reg & Z_FLAG) == Z_FLAG
-     c = (reg & C_FLAG) == C_FLAG
-     v = (reg & V_FLAG) == V_FLAG
-     if n: flags +="N "
-     if z: flags +="Z "
-     if c: flags +="C "
-     if v: flags +="V"
-
-     if z: str = "EQ"
-     else: str = "NE"
-
-     mode = RM_MASK & reg
-     if mode == RN_FLAG: str += " RN"
-     elif mode == RP_FLAG: str += "RP"
-     elif mode == RM_FLAG: str += "RM"
-     else: str += "RZ"
-
-     if (reg & DZE_FLAG) == DZE_FLAG: str += " DZE"
-
-     return flags, str
 #--------------------------
 # Register command and Register Window
 
 class RegisterCmd(gdb.Command):
     """Add registers to the custom TUI Window register.
 register OPT|/FMT register-list
-/FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float, c: char
+/FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float, c: char, a: address
 OPT: del register-list
      clear - clear all registers from the window
      save filename - save register-list to file (use so filename to read back)
 Ranges can be specified with -"""
 
     def __init__(self):
-        if machine() == "aarch64":
-            self.__doc__ += "\nregister x0 x10 - x15 s0 s4 - s6 d5 - d9 w0 w10 - w15\nSpecial registers: lr, pc, sp, cpsr, fpsr, fpcr"
-        else:
-            self.__doc__ += "\nregister r0 r10 - r15 s0 s4 - s6 d5 - d9\nSpecial registers: lr, pc, sp, cpsr, fpscr"
+        self.__doc__ += "\nregister x0 - x31 a0 - a7 t0 - t7 s0 - s11\nSpecial registers: ra, pc, sp, fp, gp, tp"
  
         super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
         self.win = None
@@ -406,14 +260,14 @@ class RegisterWindow(object):
         for name, reg in self.regs.items():
             reg.value()
 
-            if width < 53 and reg.is_vector() or width < 29 and not reg.is_vector():
+            if width < 29:
                 line += NL
                 self.tui_list.append(line)
                 line = ""
                 width = self.tui.width
 
             line += f'{GREEN}{name:<5}{reg:<24}{RESET}'
-            width -= 53 if reg.is_vector() else 29
+            width -= 29
 
         if line != "":
             line += NL
