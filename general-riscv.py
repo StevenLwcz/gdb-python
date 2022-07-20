@@ -77,7 +77,7 @@ class SPReg(Register):
         return self.val.format_string()
 
 reg_class = {'x': XReg, 'a': XReg, 't': XReg, 's': XReg}
-reg_special = {'ra': LRReg, 'pc': PCReg, 'sp': SPReg}
+reg_special = {'ra': LRReg, 'pc': PCReg, 'sp': SPReg, 'gp': LRReg, 'fp': LRReg, "tp": LRReg}
 
 #--------------------------
 # Register command and Register Window
@@ -92,7 +92,7 @@ OPT: del register-list
 Ranges can be specified with -"""
 
     def __init__(self):
-        self.__doc__ += "\nregister x0 - x31 a0 - a7 t0 - t7 s0 - s11\nSpecial registers: ra, pc, sp, fp, gp, tp"
+        self.__doc__ += "\nregister x0 - x31 a0 - a7 t0 - t6 s0 - s11\nSpecial registers: ra, pc, sp, fp, gp, tp"
  
         super(RegisterCmd, self).__init__("register", gdb.COMMAND_DATA)
         self.win = None
