@@ -33,7 +33,7 @@ class Register(object):
     def __init__(self, name):
         self.name = name
         self.val = None
-        self.fmt = 'd'
+        self.fmt = None
         self.colour = WHITE
 
     @classmethod
@@ -56,28 +56,21 @@ class Register(object):
         val = Register.frame.read_register(self.name)
         self.colour = BLUE if self.val != val else WHITE
         self.val = val
-        return self.val
 
 class XReg(Register):
-    pass
 
-class LRReg(Register):
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'd'
 
-    def __str__(self):
-        return self.val.format_string()
+class AdReg(Register):
 
-class PCReg(Register):
-
-    def __str__(self):
-        return self.val.format_string()
-
-class SPReg(Register):
-
-    def __str__(self):
-        return self.val.format_string()
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'a'
 
 reg_class = {'x': XReg, 'a': XReg, 't': XReg, 's': XReg}
-reg_special = {'ra': LRReg, 'pc': PCReg, 'sp': SPReg, 'gp': LRReg, 'fp': LRReg, "tp": LRReg}
+reg_special = {'ra': AdReg, 'pc': AdReg, 'sp': AdReg, 'gp': AdReg, 'fp': AdReg, "tp": AdReg}
 
 #--------------------------
 # Register command and Register Window
@@ -266,7 +259,7 @@ class RegisterWindow(object):
                 line = ""
                 width = self.tui.width
 
-            line += f'{GREEN}{name:<5}{reg:<24}{RESET}'
+            line += f'{GREEN}{name:<5}{reg:<24}'
             width -= 29
 
         if line != "":
