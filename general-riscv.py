@@ -3,7 +3,7 @@
 
 GREEN = "\x1b[38;5;47m"
 BLUE  = "\x1b[38;5;14m"
-WHITE = "\x1b[38;5;15m"
+WHITE = "\x1b[38;5;255m"
 GREY  = "\x1b[38;5;246m"
 RESET = "\x1b[0m"
 NL = "\n"
@@ -112,10 +112,10 @@ Ranges can be specified with -"""
         elif args[0][0:1] == '/':
             if argc > 1:
                 f = args[0][1:2]
-                if f in ['x', 'z', 's', 'u', 'f', 'c', 'a']:
+                if f in ['x', 'z', 's', 'u', 'f', 'c', 'a', 't']:
                     format = 'd' if f == 's' else f
                 else:
-                    print(f'register /FMT: x, z, s, u, f, c or a expected: {f}')
+                    print(f'register /FMT: x, z, s, u, f, c, a or t expected: {f}')
                     return
                 del args[0]
             else:
