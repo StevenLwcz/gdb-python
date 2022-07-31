@@ -86,10 +86,7 @@ class AdReg(Register):
 class FSReg(Register):
 
     def __init__(self, name):
-        f = name.find('.')
-        name = name[0:f]
-        print(name)
-        super().__init__(name)
+        super().__init__(name.partition('.')[0])
         self.fmt = 'f'
 
     def __str__(self):

@@ -4,7 +4,7 @@ from platform import machine
 
 GREEN = "\x1b[38;5;47m"
 BLUE  = "\x1b[38;5;14m"
-WHITE = "\x1b[38;5;15m"
+WHITE = "\x1b[38;5;255m"
 GREY  = "\x1b[38;5;246m"
 RESET = "\x1b[0m"
 NL = "\n\n"
@@ -44,7 +44,7 @@ reg_aarch64 = {"x0": 0, "x1": 1, "x2": 2, "x3": 3, "x4": 4, "x5": 5, "x6": 6, "x
        "w9": 232, "w10": 233, "w11": 234, "w12": 235, "w13": 236, "w14": 237, "w15": 238, "w16": 239,
        "w17": 240, "w18": 241, "w19": 242, "w20": 243, "w21": 244, "w22": 245, "w23": 246, "w24": 247,
        "w25": 248, "w26": 249, "w27": 250, "w28": 251, "w29": 252, "w30": 253,
-       "pc": 254, "sp": 255, "cpsr": 256, "fpsr": 257, "fpcr": 258}
+       "pc": 254, "sp": 255, "cpsr": 256, "fpsr": 257, "fpcr": 258, "lr": 259}
 
 reg_armv8a = {"r0": 0, "r1": 1, "r2": 2, "r3": 3, "r4": 4, "r5": 5, "r6": 6, "r7": 7, "r8": 8,
        "r9": 9, "r10": 10, "r11": 11, "r12": 12,
@@ -144,18 +144,11 @@ class VReg(Register):
     def is_vector(self):
         return True
 
-class LRReg(Register):
-    pass
-
 class PCReg(Register):
 
-    def __str__(self):
-        return self.val.format_string()
-
-class SPReg(Register):
-
-    def __str__(self):
-        return self.val.format_string()
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'a'
 
 class FPCRReg(Register):
 
@@ -229,10 +222,10 @@ class FPSCRReg(Register):
 
 if machine() == "aarch64":
     reg_class = {'x': XReg, 's': HSDReg, 'd': HSDReg, 'h': HSDReg, 'b': BReg, 'q': QReg, 'v': VReg, 'w': WReg}
-    reg_special = {'lr': LRReg, 'pc': PCReg, 'sp': SPReg, 'cpsr': CPSRReg, 'fpsr': FPSRReg, 'fpcr': FPCRReg}
+    reg_special = {'lr': PCReg, 'pc': PCReg, 'sp': PCReg, 'cpsr': CPSRReg, 'fpsr': FPSRReg, 'fpcr': FPCRReg}
 else:
     reg_class = {'r': XReg, 's': SReg, 'd': DReg, 'q': Qav8Reg}
-    reg_special = {'lr': LRReg, 'pc': PCReg, 'sp': SPReg, 'cpsr': CPSRReg, 'fpscr': FPSCRReg}
+    reg_special = {'lr': PCReg, 'pc': PCReg, 'sp': PCReg, 'cpsr': CPSRReg, 'fpscr': FPSCRReg}
 
 
 #--------------------------
