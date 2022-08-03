@@ -308,14 +308,14 @@ class RegisterWindow(object):
         for name, reg in self.regs.items():
             reg.value()
 
-            if width < 29:
+            if width < 31:
                 line += NL
                 self.tui_list.append(line)
                 line = ""
                 width = self.tui.width
 
-            line += f'{GREEN}{name:<5}{reg:<24}'
-            width -= 29
+            line += f'{GREEN}{name:<7}{reg:<24}'
+            width -= 31
 
         if line != "":
             line += NL
