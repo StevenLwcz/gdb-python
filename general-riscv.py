@@ -101,6 +101,33 @@ class FDReg(Register):
     def __str__(self):
         return self.val['double'].format_string(format=self.fmt)
 
+class FClass(Register):
+
+    NEGI = 0b0000000001
+    NEGN = 0b0000000010
+    NEGS = 0b0000000100
+    NEGZ = 0b0000001000
+    POSZ = 0b0000010000
+    POSS = 0b0000100000
+    POSN = 0b0001000000
+    POSI = 0b0010000000
+    NANS = 0b0100000000
+    NANQ = 0b1000000000
+
+    fclass = {NEGI: "Negitive Infinity", NEGN: "Negative Normal", NEGS: "Negative Subnormal",
+    NEGZ: "Negative Zero", POSZ: "Positive Zero", POSS: "Positive Subnormal", 
+    POSN: "Positive Normal", POSI: "Positive Ininity", NANS: "Signalling NAN", NANQ: "Quiet NAN"}
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.fmt = 'd'
+
+    def __str__(self):
+        try:
+            return FClass.fclass[int(self.val)]
+        except:
+            return self.val.format_string(format=self.fmt)
+
 reg_rv64_class = {"x0": XReg, "x1": XReg, "x2": XReg, "x3": XReg, "x4": XReg, "x5": XReg, "x6": XReg, "x7": XReg, 
 "x8": XReg, "x9": XReg, "x10": XReg, "x11": XReg, "x12": XReg, "x13": XReg, "x14": XReg, "x15": XReg, 
 "x16": XReg, "x17": XReg, "x18": XReg, "x19": XReg, "x20": XReg, "x21": XReg, "x22": XReg, "x23": XReg, 
@@ -135,6 +162,7 @@ class RegisterCmd(gdb.Command):
 register OPT|/FMT register-list
 /FMT: x: hex, z: zero pad hex, s: signed, u: unsigned, f: float, c: char, a: address
 OPT: del register-list
+     fclass register-list - decode register bit pattern for the fclass instruction
      clear - clear all registers from the window
      save filename - save register-list to file (use so filename to read back)
 Ranges can be specified with -"""
@@ -158,6 +186,7 @@ Ranges can be specified with -"""
         expand = False
         delete = False
         format = None
+        fclass = False
 
         args = gdb.string_to_argv(arguments)
         argc = len(args)
@@ -193,6 +222,13 @@ Ranges can be specified with -"""
             else:
                 print("register save filename")
                 return
+        elif args[0] == "fclass":
+            if argc > 1:
+                fclass = True
+                del args[0]
+            else:
+                print("register fclass register-list")
+                return
             
         for reg in args:
             if reg == "-":
@@ -218,6 +254,8 @@ Ranges can be specified with -"""
             self.win.del_registers(reg_list)
         elif format is not None:
             self.win.format_registers(reg_list, format)
+        elif fclass:
+            self.win.fclass_registers(reg_list)
         else:
             self.win.add_registers(reg_list)
 
@@ -239,6 +277,11 @@ class RegisterWindow(object):
         self.regs = RegisterWindow.regs_save
         self.start = 0
         self.tui_list = []
+
+    def fclass_registers(self, list):
+        for name in list:
+            self.regs[name] = FClass(name)
+        # todo check for XReg type 
 
     def add_registers(self, list):
         for name in list:
