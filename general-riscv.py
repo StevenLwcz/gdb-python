@@ -36,7 +36,7 @@ reg_rv64 = {"x0": 0, "x1": 1, "x2": 2, "x3": 3, "x4": 4, "x5": 5, "x6": 6, "x7":
 "fs0.s": 168, "fs1.s": 169, "fs2.s": 170, "fs3.s": 171, "fs4.s": 172, "fs5.s": 173, "fs6.s": 174, "fs7.s": 175, 
 "fs8.s": 176, "fs9.s": 177, "fs10.s": 178, "fs11.s": 179, "ft0.s": 180, "ft1.s": 181, "ft2.s": 182, "ft3.s": 183, 
 "ft4.s": 184, "ft5.s": 185, "ft6.s": 186, "ft7.s": 187, "ft8.s": 188, "ft9.s": 189, "ft10.s": 190, "ft11.s": 191, 
-"ra": 192, "sp": 193, "gp": 194, "fp": 195, "pc": 255}
+"ra": 192, "sp": 193, "gp": 194, "fp": 195, "tp", "pc": 255}
 
 registers = reg_rv64
 
@@ -152,7 +152,7 @@ reg_rv64_class = {"x0": XReg, "x1": XReg, "x2": XReg, "x3": XReg, "x4": XReg, "x
 "fs0.s": FSReg, "fs1.s": FSReg, "fs2.s": FSReg, "fs3.s": FSReg, "fs4.s": FSReg, "fs5.s": FSReg, "fs6.s": FSReg, "fs7.s": FSReg, 
 "fs8.s": FSReg, "fs9.s": FSReg, "fs10.s": FSReg, "fs11.s": FSReg, "ft0.s": FSReg, "ft1.s": FSReg, "ft2.s": FSReg, "ft3.s": FSReg, 
 "ft4.s": FSReg, "ft5.s": FSReg, "ft6.s": FSReg, "ft7.s": FSReg, "ft8.s": FSReg, "ft9.s": FSReg, "ft10.s": FSReg, "ft11.s": FSReg, 
-"ra": AdReg, "sp": AdReg, "gp": AdReg, "fp": AdReg, "pc": AdReg}
+"ra": AdReg, "sp": AdReg, "gp": AdReg, "fp": AdReg, "tp": AdReg, "pc": AdReg}
 
 #--------------------------
 # Register command and Register Window
